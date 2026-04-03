@@ -6,7 +6,7 @@ import storage from '../utils/storage';
 // 10.0.2.2 works for Android Emulator
 // Use your machine's LAN IP (e.g. 192.168.x.x) for physical devices
 // Use deployed URL (e.g. https://idoc-backend.railway.app/api/v1) for production
-const BASE_URL = 'https://perfect-grace-production-b406.up.railway.app/api/v1';
+const BASE_URL = 'https://idoc-backend-prod-production.up.railway.app/api/v1';
 
 const api = axios.create({
   baseURL: BASE_URL,

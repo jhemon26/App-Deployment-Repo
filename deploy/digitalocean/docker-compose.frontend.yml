@@ -1,0 +1,9 @@
+services:
+  idoc-web:
+    build:
+      context: ../../idoc-app
+      dockerfile: Dockerfile.web
+    container_name: idoc-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
