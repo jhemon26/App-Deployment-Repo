@@ -51,6 +51,31 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError('Email already registered')
         return value
 
+    def validate(self, data):
+        role = data.get('role')
+
+        if role == User.Role.DOCTOR:
+            missing = []
+            for field in ['specialty', 'experience', 'fee', 'license_number']:
+                if not data.get(field):
+                    missing.append(field)
+            if missing:
+                raise serializers.ValidationError({
+                    field: 'This field is required for doctor registration.' for field in missing
+                })
+
+        if role == User.Role.PHARMACY:
+            missing = []
+            for field in ['pharmacy_name', 'pharmacy_license', 'address']:
+                if not data.get(field):
+                    missing.append(field)
+            if missing:
+                raise serializers.ValidationError({
+                    field: 'This field is required for pharmacy registration.' for field in missing
+                })
+
+        return data
+
     def create(self, validated_data):
         role = validated_data['role']
 

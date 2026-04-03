@@ -112,8 +112,40 @@ def pending_approvals(request):
     """Get all users awaiting admin approval."""
     pending = User.objects.filter(
         is_approved=False, role__in=['doctor', 'pharmacy']
-    ).order_by('-created_at')
-    return Response(UserSerializer(pending, many=True).data)
+    ).order_by('-created_at').prefetch_related('doctor_profile', 'pharmacy_profile')
+
+    payload = []
+    for user in pending:
+        item = {
+            'id': str(user.id),
+            'name': user.name,
+            'email': user.email,
+            'phone': user.phone,
+            'type': user.role,
+            'role': user.role,
+            'submitted': user.created_at.isoformat(),
+            'is_approved': user.is_approved,
+        }
+
+        if user.role == 'doctor' and hasattr(user, 'doctor_profile'):
+            item.update({
+                'specialty': user.doctor_profile.specialty,
+                'experience': user.doctor_profile.experience,
+                'license': user.doctor_profile.license_number,
+                'license_number': user.doctor_profile.license_number,
+            })
+
+        if user.role == 'pharmacy' and hasattr(user, 'pharmacy_profile'):
+            item.update({
+                'pharmacy_name': user.pharmacy_profile.pharmacy_name,
+                'address': user.pharmacy_profile.address,
+                'license': user.pharmacy_profile.license_number,
+                'license_number': user.pharmacy_profile.license_number,
+            })
+
+        payload.append(item)
+
+    return Response(payload)
 
 
 @api_view(['POST'])

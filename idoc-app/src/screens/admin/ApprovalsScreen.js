@@ -33,14 +33,23 @@ export default function AdminApprovalsScreen() {
     loadApprovals();
   }, []);
 
+  const getApprovalType = (item) => item.type || item.role;
+
+  const getSubmittedLabel = (value) => {
+    if (!value) return 'N/A';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleDateString();
+  };
+
   const filteredApprovals = useMemo(() => {
     if (activeFilter === 'all') return approvals;
-    return approvals.filter((item) => item.type === activeFilter);
+    return approvals.filter((item) => getApprovalType(item) === activeFilter);
   }, [approvals, activeFilter]);
 
   const handleApprove = async (item) => {
     try {
-      if (item.type === 'doctor') {
+      if (getApprovalType(item) === 'doctor') {
         await adminAPI.approveDoctor(item.id);
       } else {
         await adminAPI.approvePharmacy(item.id);
@@ -73,8 +82,8 @@ export default function AdminApprovalsScreen() {
 
       <View style={{ flexDirection: 'row', paddingHorizontal: SPACING.xl, marginBottom: SPACING.md }}>
         <Chip label={`All (${approvalCount})`} active={activeFilter === 'all'} onPress={() => setActiveFilter('all')} />
-        <Chip label={`Doctors (${approvals.filter((item) => item.type === 'doctor').length})`} active={activeFilter === 'doctor'} onPress={() => setActiveFilter('doctor')} />
-        <Chip label={`Pharmacies (${approvals.filter((item) => item.type === 'pharmacy').length})`} active={activeFilter === 'pharmacy'} onPress={() => setActiveFilter('pharmacy')} />
+        <Chip label={`Doctors (${approvals.filter((item) => getApprovalType(item) === 'doctor').length})`} active={activeFilter === 'doctor'} onPress={() => setActiveFilter('doctor')} />
+        <Chip label={`Pharmacies (${approvals.filter((item) => getApprovalType(item) === 'pharmacy').length})`} active={activeFilter === 'pharmacy'} onPress={() => setActiveFilter('pharmacy')} />
       </View>
 
       {loading ? (
@@ -99,19 +108,28 @@ export default function AdminApprovalsScreen() {
           }
           renderItem={({ item }) => (
             <Card style={{ marginBottom: SPACING.md }}>
+              {(() => {
+                const approvalType = getApprovalType(item);
+                const typeColor = approvalType === 'doctor' ? COLORS.doctor : COLORS.pharmacy;
+                const label = approvalType ? approvalType.charAt(0).toUpperCase() + approvalType.slice(1) : 'User';
+                const licenseValue = item.license || item.license_number || 'N/A';
+
+                return (
               <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <Avatar name={item.name} size={50} color={item.type === 'doctor' ? COLORS.doctor : COLORS.pharmacy} />
+                <Avatar name={item.name} size={50} color={typeColor} />
                 <View style={{ flex: 1, marginLeft: SPACING.md }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, flexWrap: 'wrap' }}>
                     <Text style={{ ...FONTS.bodyBold, color: COLORS.text }}>{item.name}</Text>
-                    <Badge text={item.type} color={item.type === 'doctor' ? COLORS.doctor : COLORS.pharmacy} size="sm" />
+                    <Badge text={label} color={typeColor} size="sm" />
                   </View>
                   <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 2 }}>{item.email}</Text>
                   {item.specialty && <Text style={{ ...FONTS.caption, color: COLORS.primary, marginTop: 2 }}>Specialty: {item.specialty}</Text>}
                   {item.address && <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 2 }}>{item.address}</Text>}
-                  <Text style={{ ...FONTS.small, color: COLORS.textMuted, marginTop: 4 }}>License: {item.license} • Submitted: {item.submitted}</Text>
+                  <Text style={{ ...FONTS.small, color: COLORS.textMuted, marginTop: 4 }}>License: {licenseValue} • Submitted: {getSubmittedLabel(item.submitted)}</Text>
                 </View>
               </View>
+                );
+              })()}
               <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg }}>
                 <Button title="Approve" size="sm" onPress={() => handleApprove(item)} style={{ flex: 1 }} />
                 <Button title="Reject" size="sm" variant="outline" color={COLORS.danger} onPress={() => handleReject(item)} style={{ flex: 1 }} />

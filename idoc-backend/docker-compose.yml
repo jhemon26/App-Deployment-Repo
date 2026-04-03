@@ -19,10 +19,7 @@ services:
 
   backend:
     build: .
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py seed_data 2>/dev/null || true &&
-             daphne -b 0.0.0.0 -p 8000 config.asgi:application"
+    command: sh start.sh
     volumes:
       - .:/app
       - media_data:/app/media

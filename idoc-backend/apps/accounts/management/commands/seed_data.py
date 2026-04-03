@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from apps.accounts.models import DoctorProfile, PharmacyProfile
 from apps.pharmacies.models import Medicine
@@ -7,9 +8,13 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = 'Seed database with demo data'
+    help = 'Seed optional demo data when RUN_SEED_DATA=true'
 
     def handle(self, *args, **options):
+        if not getattr(settings, 'RUN_SEED_DATA', False):
+            self.stdout.write('Skipping demo seed data (RUN_SEED_DATA=false).')
+            return
+
         if User.objects.filter(email='admin@idoc.com').exists():
             self.stdout.write('Data already seeded.')
             return

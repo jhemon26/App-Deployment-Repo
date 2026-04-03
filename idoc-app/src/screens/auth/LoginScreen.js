@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../context/AuthContext';
-import { Button, Input, Card } from '../../components/UIComponents';
+import { Button, Input } from '../../components/UIComponents';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../utils/theme';
 import Toast from 'react-native-toast-message';
 
@@ -26,22 +26,6 @@ export default function LoginScreen({ navigation }) {
       Toast.show({ type: 'success', text1: 'Welcome back!' });
     } catch (error) {
       Toast.show({ type: 'error', text1: 'Login Failed', text2: error.message });
-    }
-  };
-
-  const QUICK_CREDS = {
-    'john@idoc.com': 'user123',
-    'sarah@idoc.com': 'doctor123',
-    'medplus@idoc.com': 'pharmacy123',
-    'admin@idoc.com': 'admin123',
-  };
-
-  const quickLogin = async (email) => {
-    try {
-      await login(email, QUICK_CREDS[email]);
-      Toast.show({ type: 'success', text1: 'Welcome!' });
-    } catch (e) {
-      Toast.show({ type: 'error', text1: 'Login Failed', text2: e.message });
     }
   };
 
@@ -98,26 +82,6 @@ export default function LoginScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Quick Login (Dev Mode) */}
-        <View style={styles.devSection}>
-          <Text style={styles.devTitle}>— Quick Login (Demo) —</Text>
-          <View style={styles.quickBtns}>
-            {[
-              { label: 'Patient', email: 'john@idoc.com', color: COLORS.general },
-              { label: 'Doctor', email: 'sarah@idoc.com', color: COLORS.doctor },
-              { label: 'Pharmacy', email: 'medplus@idoc.com', color: COLORS.pharmacy },
-              { label: 'Admin', email: 'admin@idoc.com', color: COLORS.admin },
-            ].map((item) => (
-              <TouchableOpacity
-                key={item.email}
-                onPress={() => quickLogin(item.email)}
-                style={[styles.quickBtn, { borderColor: item.color }]}
-              >
-                <Text style={[styles.quickBtnText, { color: item.color }]}>{item.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -161,31 +125,4 @@ const styles = StyleSheet.create({
   },
   registerText: { ...FONTS.body, color: COLORS.textSecondary },
   registerLink: { ...FONTS.bodyBold, color: COLORS.primary },
-  devSection: {
-    marginTop: SPACING.xl,
-    padding: SPACING.lg,
-    borderRadius: RADIUS.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderStyle: 'dashed',
-  },
-  devTitle: {
-    ...FONTS.caption,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    marginBottom: SPACING.md,
-  },
-  quickBtns: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: SPACING.sm,
-  },
-  quickBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: RADIUS.full,
-    borderWidth: 1.5,
-  },
-  quickBtnText: { ...FONTS.captionBold },
 });

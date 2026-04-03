@@ -166,6 +166,9 @@ STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY', default='')
 STRIPE_PUBLISHABLE_KEY = env('STRIPE_PUBLISHABLE_KEY', default='')
 STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET', default='')
 
+# ─── Optional Demo Data ───
+RUN_SEED_DATA = env.bool('RUN_SEED_DATA', default=False)
+
 # ─── Agora ───
 AGORA_APP_ID = env('AGORA_APP_ID', default='')
 AGORA_APP_CERTIFICATE = env('AGORA_APP_CERTIFICATE', default='')

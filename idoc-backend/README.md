@@ -38,22 +38,24 @@ Works on iOS, Android, and Web from a single codebase.
 ```bash
 cd idoc-backend
 
-# Option A: Docker (recommended)
-docker-compose up -d
+# Option A: Docker (PostgreSQL + Redis + Backend)
+docker compose up -d
 # Backend runs on http://localhost:8000
-# Database is auto-migrated and seeded
+# PostgreSQL runs on localhost:5432
+# Migrations run on boot
 
 # Option B: Manual
-python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+/usr/local/bin/python3.12 -m venv .venv312
+source .venv312/bin/activate   # Windows: .venv312\Scripts\activate
 pip install -r requirements.txt
-cp .env .env.local         # Edit settings as needed
+cp .env.example .env
 
-# For SQLite (quick dev — no Postgres needed):
-# Just run as-is, it defaults to SQLite
+# Use PostgreSQL (recommended)
+# DATABASE_URL=postgresql://idoc_user:idoc_password@localhost:5432/idoc_db
+# or use SQLite quick-dev fallback:
+# DATABASE_URL=sqlite:///db.sqlite3
 
 python manage.py migrate
-python manage.py seed_data
 python manage.py runserver
 ```
 
@@ -81,18 +83,16 @@ const BASE_URL = 'http://YOUR_IP:8000/api/v1';
 // For physical device:  http://YOUR_COMPUTER_IP:8000/api/v1
 ```
 
-Set `USE_MOCK = false` in `idoc-app/src/context/AuthContext.js`
+Auth now uses backend JWT + database accounts only. Create users from the app registration screen.
 
 ---
 
-## Demo Credentials
+## Account Approval Flow
 
-| Role     | Email              | Password    |
-|----------|--------------------|-------------|
-| Admin    | admin@idoc.com     | admin123    |
-| Doctor   | sarah@idoc.com     | doctor123   |
-| Pharmacy | medplus@idoc.com   | pharmacy123 |
-| Patient  | john@idoc.com      | user123     |
+- General users are auto-approved on registration.
+- Doctor and pharmacy users remain pending until admin approval.
+- Admin approval endpoint queue: `/api/v1/admin/pending-approvals/`.
+- Optional demo seeding only runs when `RUN_SEED_DATA=true`.
 
 ---
 
