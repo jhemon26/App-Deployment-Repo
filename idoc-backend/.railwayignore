@@ -1,0 +1,11 @@
+venv/
+.venv/
+.venv312/
+staticfiles/
+*.pyc
+__pycache__/
+.env
+media/
+.pytest_cache/
+.mypy_cache/
+.DS_Store

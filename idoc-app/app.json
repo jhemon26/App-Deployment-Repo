@@ -1,0 +1,75 @@
+{
+  "expo": {
+    "name": "I Doc",
+    "slug": "idoc-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "idoc",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0E1A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.idoc.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "I Doc needs camera access for video consultations",
+        "NSMicrophoneUsageDescription": "I Doc needs microphone access for video consultations",
+        "NSPhotoLibraryUsageDescription": "I Doc needs photo library access for profile pictures",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0E1A"
+      },
+      "package": "com.idoc.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ],
+      "versionCode": 2
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#00D9A6"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow I Doc to access your camera for video consultations."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow I Doc to access your photos for profile pictures."
+        }
+      ],
+      "expo-asset"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a075934d-4966-4747-ad1c-56f325a70207"
+      }
+    },
+    "owner": "jemon"
+  }
+}
