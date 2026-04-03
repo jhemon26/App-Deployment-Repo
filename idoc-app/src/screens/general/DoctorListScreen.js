@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Card, Avatar, Badge, SearchBar, Chip } from '../../components/UIComponents';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../utils/theme';
@@ -19,46 +20,53 @@ const SPECIALTIES = ['All', 'General Medicine', 'Pediatrics', 'Dermatology', 'Ca
 export default function DoctorListScreen({ navigation, route }) {
   const [search, setSearch] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState(route?.params?.specialty || 'All');
-  const [doctors, setDoctors] = useState(DOCTORS);
+  const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadDoctors = async () => {
-      try {
-        const params = {};
-        if (selectedSpecialty !== 'All') params.specialty = selectedSpecialty;
-        if (search.trim()) params.search = search.trim();
+  const loadDoctors = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (selectedSpecialty !== 'All') params.specialty = selectedSpecialty;
+      if (search.trim()) params.search = search.trim();
 
-        const { data } = await doctorAPI.list(params);
-        const rows = Array.isArray(data) ? data : data?.results || [];
-        const mapped = rows.map((entry) => {
-          const profile = entry.user ? entry : entry.doctor_profile || entry;
-          const user = profile.user || {};
-          return {
-            id: profile.id,
-            doctorProfileId: profile.id,
-            userId: user.id,
-            name: user.name || profile.name || 'Doctor',
-            specialty: profile.specialty || 'General Medicine',
-            rating: Number(profile.rating || 0),
-            fee: Number(profile.fee || 0),
-            available: profile.is_available !== false,
-            experience: profile.experience || 'Experience not listed',
-            patients: Number(profile.total_patients || 0),
-            bio: profile.bio,
-          };
-        });
+      const { data } = await doctorAPI.list(params);
+      const rows = Array.isArray(data) ? data : data?.results || [];
+      const mapped = rows.map((entry) => {
+        const profile = entry.user ? entry : entry.doctor_profile || entry;
+        const user = profile.user || {};
+        return {
+          id: profile.id,
+          doctorProfileId: profile.id,
+          userId: user.id,
+          name: user.name || profile.name || 'Doctor',
+          specialty: profile.specialty || 'General Medicine',
+          rating: Number(profile.rating || 0),
+          fee: Number(profile.fee || 0),
+          available: profile.is_available !== false,
+          experience: profile.experience || 'Experience not listed',
+          patients: Number(profile.total_patients || 0),
+          bio: profile.bio,
+        };
+      });
 
-        setDoctors(mapped.length ? mapped : DOCTORS);
-      } catch (error) {
-        setDoctors(DOCTORS);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDoctors();
+      setDoctors(mapped);
+    } catch (error) {
+      setDoctors([]);
+    } finally {
+      setLoading(false);
+    }
   }, [search, selectedSpecialty]);
+
+  useEffect(() => {
+    loadDoctors();
+  }, [loadDoctors]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadDoctors();
+    }, [loadDoctors])
+  );
 
   const filtered = useMemo(() => doctors.filter((d) => {
     const matchSearch = d.name.toLowerCase().includes(search.toLowerCase()) ||

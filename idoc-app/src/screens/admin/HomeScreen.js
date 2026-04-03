@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../context/AuthContext';
 import { Card, StatCard, Badge, SectionHeader } from '../../components/UIComponents';
@@ -12,6 +12,8 @@ const typeIcon = { approval: 'time-outline', issue: 'alert-circle-outline', paym
 export default function AdminHomeScreen({ navigation }) {
   const { user } = useAuth();
   const { dashboard, loading, error, refresh } = useRoleDashboard('admin');
+  const { width } = useWindowDimensions();
+  const compact = width < 980;
   const usersByRole = dashboard?.users_by_role || {};
   const activities = (dashboard?.recent_activity || []).slice(0, 8);
 
@@ -51,20 +53,32 @@ export default function AdminHomeScreen({ navigation }) {
         </TouchableOpacity>
       )}
 
-      <View style={styles.statsRow}>
-        <StatCard label="Total Users" value={String(totalUsers)} color={COLORS.info} icon={<Ionicons name="people-outline" size={16} color={COLORS.info} />} />
-        <View style={{ width: SPACING.md }} />
-        <StatCard label="Doctors" value={String(totalDoctors)} color={COLORS.doctor} icon={<Ionicons name="medkit-outline" size={16} color={COLORS.doctor} />} />
+      <View style={styles.quickActions}>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Approvals')}>
+          <Ionicons name="checkmark-done-outline" size={16} color={COLORS.warning} />
+          <Text style={styles.quickActionText}>Approvals Queue</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Users')}>
+          <Ionicons name="people-outline" size={16} color={COLORS.info} />
+          <Text style={styles.quickActionText}>Manage Users</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Notifications')}>
+          <Ionicons name="notifications-outline" size={16} color={COLORS.primary} />
+          <Text style={styles.quickActionText}>Alerts</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={refresh}>
+          <Ionicons name="refresh-outline" size={16} color={COLORS.success} />
+          <Text style={styles.quickActionText}>Refresh</Text>
+        </TouchableOpacity>
       </View>
-      <View style={[styles.statsRow, { marginTop: SPACING.md }]}>
-        <StatCard label="Pharmacies" value={String(totalPharmacies)} color={COLORS.pharmacy} icon={<Ionicons name="medical-outline" size={16} color={COLORS.pharmacy} />} />
-        <View style={{ width: SPACING.md }} />
-        <StatCard label="Revenue" value={revenueText} color={COLORS.success} icon={<Ionicons name="cash-outline" size={16} color={COLORS.success} />} />
-      </View>
-      <View style={[styles.statsRow, { marginTop: SPACING.md }]}>
-        <StatCard label="Pending" value={String(pendingApprovals)} color={COLORS.warning} icon={<Ionicons name="time-outline" size={16} color={COLORS.warning} />} />
-        <View style={{ width: SPACING.md }} />
-        <StatCard label="Blocked" value={String(blockedUsers)} color={COLORS.danger} icon={<Ionicons name="ban-outline" size={16} color={COLORS.danger} />} />
+
+      <View style={[styles.statsGrid, compact && styles.statsGridCompact]}>
+        <StatCard style={styles.statCard} label="Total Users" value={String(totalUsers)} color={COLORS.info} icon={<Ionicons name="people-outline" size={16} color={COLORS.info} />} />
+        <StatCard style={styles.statCard} label="Doctors" value={String(totalDoctors)} color={COLORS.doctor} icon={<Ionicons name="medkit-outline" size={16} color={COLORS.doctor} />} />
+        <StatCard style={styles.statCard} label="Pharmacies" value={String(totalPharmacies)} color={COLORS.pharmacy} icon={<Ionicons name="medical-outline" size={16} color={COLORS.pharmacy} />} />
+        <StatCard style={styles.statCard} label="Revenue" value={revenueText} color={COLORS.success} icon={<Ionicons name="cash-outline" size={16} color={COLORS.success} />} />
+        <StatCard style={styles.statCard} label="Pending" value={String(pendingApprovals)} color={COLORS.warning} icon={<Ionicons name="time-outline" size={16} color={COLORS.warning} />} />
+        <StatCard style={styles.statCard} label="Blocked" value={String(blockedUsers)} color={COLORS.danger} icon={<Ionicons name="ban-outline" size={16} color={COLORS.danger} />} />
       </View>
 
       <SectionHeader title="Recent Activity" actionText="Refresh" onAction={refresh} style={{ marginTop: SPACING.xl }} />
@@ -97,7 +111,37 @@ export default function AdminHomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingTop: 60, paddingBottom: SPACING.lg },
-  statsRow: { flexDirection: 'row', paddingHorizontal: SPACING.xl },
+  quickActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+  quickActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.bgElevated,
+    borderColor: COLORS.border,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  quickActionText: { ...FONTS.captionBold, color: COLORS.text, marginLeft: 6 },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: SPACING.xl,
+    justifyContent: 'space-between',
+  },
+  statsGridCompact: {
+    gap: SPACING.md,
+  },
+  statCard: {
+    width: '48%',
+    marginBottom: SPACING.md,
+  },
   stateWrap: {
     marginHorizontal: SPACING.xl,
     marginBottom: SPACING.md,

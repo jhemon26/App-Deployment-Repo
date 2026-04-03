@@ -78,4 +78,16 @@ def pharmacy_dashboard(request):
         'today_revenue': float(
             sum(o.total for o in orders.filter(created_at__date=today, status='delivered'))
         ),
+        'recent_orders': [
+            {
+                'id': str(order.id),
+                'order_number': order.order_number,
+                'customer_name': order.customer.name,
+                'item_count': order.items.count(),
+                'total_amount': float(order.total),
+                'status': order.status,
+                'created_at': order.created_at.isoformat(),
+            }
+            for order in orders.select_related('customer').prefetch_related('items').order_by('-created_at')[:6]
+        ],
     })

@@ -11,6 +11,27 @@ export const useAuth = () => {
   return context;
 };
 
+const extractApiErrorMessage = (error, fallback) => {
+  if (!error?.response?.data) {
+    return error?.message || fallback;
+  }
+
+  const data = error.response.data;
+  if (typeof data === 'string') return data;
+  if (data.detail) return data.detail;
+  if (data.message) return data.message;
+  if (Array.isArray(data.non_field_errors) && data.non_field_errors.length) return data.non_field_errors[0];
+
+  const firstKey = Object.keys(data)[0];
+  if (firstKey) {
+    const value = data[firstKey];
+    if (Array.isArray(value) && value.length) return `${firstKey}: ${value[0]}`;
+    if (typeof value === 'string') return `${firstKey}: ${value}`;
+  }
+
+  return fallback;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,10 +73,7 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: true, needsApproval: data.needsApproval, user: data.user };
     } catch (error) {
-      const message = error.response?.data?.detail
-        || error.response?.data?.message
-        || error.response?.data?.non_field_errors?.[0]
-        || 'Registration failed';
+      const message = extractApiErrorMessage(error, 'Registration failed');
       throw new Error(message);
     } finally {
       setLoading(false);
@@ -73,11 +91,7 @@ export const AuthProvider = ({ children }) => {
       socketService.connect().catch(() => {}); // non-blocking
       return data.user;
     } catch (error) {
-      const message = error.response?.data?.detail
-        || error.response?.data?.message
-        || error.response?.data?.non_field_errors?.[0]
-        || error.message
-        || 'Login failed';
+      const message = extractApiErrorMessage(error, 'Login failed');
       throw new Error(message);
     } finally {
       setLoading(false);
@@ -108,7 +122,7 @@ export const AuthProvider = ({ children }) => {
       setUser(updatedUser);
       return updatedUser;
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Update failed');
+      throw new Error(extractApiErrorMessage(error, 'Update failed'));
     }
   }, [user]);
 

@@ -6,10 +6,17 @@ import storage from '../utils/storage';
 // localhost works for iOS Simulator
 // 10.0.2.2 works for Android Emulator
 // Use your machine's LAN IP (e.g. 192.168.x.x) for physical devices
-// Use deployed URL (e.g. https://idoc-backend.railway.app/api/v1) for production
-const PROD_BASE_URL = 'https://idoc-backend-prod-production.up.railway.app/api/v1';
+// Use deployed URL (e.g. http://144.126.239.34/api/v1) for production
+const PROD_BASE_URL = 'http://144.126.239.34/api/v1';
 const LOCAL_WEB_BASE_URL = 'http://localhost:8000/api/v1';
-const BASE_URL = (Platform.OS === 'web' && __DEV__) ? LOCAL_WEB_BASE_URL : PROD_BASE_URL;
+const WEB_OVERRIDE_BASE_URL = (
+  Platform.OS === 'web'
+  && typeof window !== 'undefined'
+  && window.localStorage
+) ? window.localStorage.getItem('IDOC_API_BASE_URL') : null;
+
+const BASE_URL = WEB_OVERRIDE_BASE_URL
+  || PROD_BASE_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,

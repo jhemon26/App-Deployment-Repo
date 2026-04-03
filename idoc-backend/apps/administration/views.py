@@ -36,6 +36,48 @@ def admin_dashboard(request):
         total=Sum('amount')
     )['total'] or 0
 
+    # Build a lightweight activity feed for admin dashboard cards.
+    activities = []
+
+    recent_pending = User.objects.filter(
+        is_approved=False,
+        role__in=['doctor', 'pharmacy']
+    ).order_by('-created_at')[:5]
+    for item in recent_pending:
+        activities.append({
+            'id': f'approval-{item.id}',
+            'type': 'approval',
+            'text': f"{item.name} ({item.role}) is waiting for approval",
+            'time': item.created_at.isoformat(),
+            'created_at': item.created_at.isoformat(),
+        })
+
+    recent_bookings = Booking.objects.select_related('patient', 'doctor').order_by('-created_at')[:5]
+    for booking in recent_bookings:
+        activities.append({
+            'id': f'booking-{booking.id}',
+            'type': 'system',
+            'text': f"Booking: {booking.patient.name} with Dr. {booking.doctor.name}",
+            'time': booking.created_at.isoformat(),
+            'created_at': booking.created_at.isoformat(),
+        })
+
+    recent_orders = Order.objects.select_related('customer', 'pharmacy').order_by('-created_at')[:5]
+    for order in recent_orders:
+        activities.append({
+            'id': f'order-{order.id}',
+            'type': 'payment',
+            'text': f"Order {order.order_number} by {order.customer.name}",
+            'time': order.created_at.isoformat(),
+            'created_at': order.created_at.isoformat(),
+        })
+
+    recent_activity = sorted(
+        activities,
+        key=lambda x: x.get('created_at') or '',
+        reverse=True,
+    )[:10]
+
     return Response({
         'total_users': total_users,
         'users_by_role': users_by_role,
@@ -45,6 +87,7 @@ def admin_dashboard(request):
         'total_orders': total_orders,
         'total_revenue': float(total_revenue),
         'blocked_users': User.objects.filter(is_blocked=True).count(),
+        'recent_activity': recent_activity,
     })
 
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../context/AuthContext';
 import { Card, StatCard, Badge, SectionHeader } from '../../components/UIComponents';
@@ -10,6 +10,8 @@ import useRoleDashboard from '../../hooks/useRoleDashboard';
 export default function PharmacyHomeScreen({ navigation }) {
   const { user } = useAuth();
   const { dashboard, loading, error, refresh } = useRoleDashboard('pharmacy');
+  const { width } = useWindowDimensions();
+  const compact = width < 900;
 
   const recentOrders = (dashboard?.recent_orders || dashboard?.orders || [])
     .slice(0, 4)
@@ -54,15 +56,30 @@ export default function PharmacyHomeScreen({ navigation }) {
         </TouchableOpacity>
       )}
 
-      <View style={styles.statsRow}>
-        <StatCard label="New Orders" value={String(newOrders)} color={COLORS.danger} icon={<Ionicons name="ellipse" size={14} color={COLORS.danger} />} />
-        <View style={{ width: SPACING.md }} />
-        <StatCard label="Today's Sales" value={`฿${Number(todayRevenue).toLocaleString()}`} color={COLORS.success} icon={<Ionicons name="cash-outline" size={16} color={COLORS.success} />} />
+      <View style={styles.quickActions}>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Orders')}>
+          <Ionicons name="cube-outline" size={16} color={COLORS.pharmacy} />
+          <Text style={styles.quickActionText}>Orders</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Inventory')}>
+          <Ionicons name="medical-outline" size={16} color={COLORS.info} />
+          <Text style={styles.quickActionText}>Inventory</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Profile')}>
+          <Ionicons name="person-outline" size={16} color={COLORS.success} />
+          <Text style={styles.quickActionText}>Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={refresh}>
+          <Ionicons name="refresh-outline" size={16} color={COLORS.warning} />
+          <Text style={styles.quickActionText}>Refresh</Text>
+        </TouchableOpacity>
       </View>
-      <View style={[styles.statsRow, { marginTop: SPACING.md }]}>
-        <StatCard label="Total Orders" value={String(totalOrders)} color={COLORS.info} icon={<Ionicons name="cube-outline" size={16} color={COLORS.info} />} />
-        <View style={{ width: SPACING.md }} />
-        <StatCard label="Medicines" value={String(totalMedicines)} color={COLORS.pharmacy} icon={<Ionicons name="medical-outline" size={16} color={COLORS.pharmacy} />} />
+
+      <View style={[styles.statsGrid, compact && styles.statsGridCompact]}>
+        <StatCard style={styles.statCard} label="New Orders" value={String(newOrders)} color={COLORS.danger} icon={<Ionicons name="ellipse" size={14} color={COLORS.danger} />} />
+        <StatCard style={styles.statCard} label="Today's Sales" value={`฿${Number(todayRevenue).toLocaleString()}`} color={COLORS.success} icon={<Ionicons name="cash-outline" size={16} color={COLORS.success} />} />
+        <StatCard style={styles.statCard} label="Total Orders" value={String(totalOrders)} color={COLORS.info} icon={<Ionicons name="cube-outline" size={16} color={COLORS.info} />} />
+        <StatCard style={styles.statCard} label="Medicines" value={String(totalMedicines)} color={COLORS.pharmacy} icon={<Ionicons name="medical-outline" size={16} color={COLORS.pharmacy} />} />
       </View>
 
       <SectionHeader title="Recent Orders" actionText="View All" onAction={() => navigation.navigate('Orders')} style={{ marginTop: SPACING.xl }} />
@@ -101,7 +118,37 @@ export default function PharmacyHomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingTop: 60, paddingBottom: SPACING.lg },
-  statsRow: { flexDirection: 'row', paddingHorizontal: SPACING.xl },
+  quickActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+  quickActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.bgElevated,
+    borderColor: COLORS.border,
+    borderWidth: 1,
+    borderRadius: RADIUS.full,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  quickActionText: { ...FONTS.captionBold, color: COLORS.text, marginLeft: 6 },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: SPACING.xl,
+    justifyContent: 'space-between',
+  },
+  statsGridCompact: {
+    gap: SPACING.md,
+  },
+  statCard: {
+    width: '48%',
+    marginBottom: SPACING.md,
+  },
   stateWrap: {
     marginHorizontal: SPACING.xl,
     marginBottom: SPACING.md,

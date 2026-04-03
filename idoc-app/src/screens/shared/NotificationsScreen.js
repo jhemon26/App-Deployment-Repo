@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Card, EmptyState, Button } from '../../components/UIComponents';
 import { COLORS, FONTS, SPACING } from '../../utils/theme';
 import { notificationAPI } from '../../services/api';
-const typeIcon = { booking: 'calendar-outline', order: 'cube-outline', prescription: 'medkit-outline', payment: 'card-outline', reminder: 'time-outline' };
+const typeIcon = {
+  booking: 'calendar-outline',
+  order: 'cube-outline',
+  prescription: 'medkit-outline',
+  payment: 'card-outline',
+  approval: 'checkmark-circle-outline',
+  reminder: 'time-outline',
+};
 
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState([]);
@@ -40,6 +48,12 @@ export default function NotificationsScreen() {
   useEffect(() => {
     loadNotifications();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadNotifications();
+    }, [])
+  );
 
   const markAsRead = async (item) => {
     if (item.read) return;

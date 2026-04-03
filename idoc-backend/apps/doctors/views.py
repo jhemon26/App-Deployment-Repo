@@ -83,10 +83,26 @@ def doctor_dashboard(request):
         doctor=request.user, status='completed'
     ).count() * float(profile.fee)
 
+    today_schedule = Booking.objects.filter(
+        doctor=request.user,
+        date=today,
+    ).select_related('patient').order_by('time_slot')[:8]
+
     return Response({
         'today_appointments': today_bookings,
         'total_patients': total_patients,
         'total_earnings': total_earnings,
         'rating': float(profile.rating),
         'total_consultations': profile.total_consultations,
+        'today_schedule': [
+            {
+                'id': str(item.id),
+                'patient_name': item.patient.name,
+                'time_slot': item.time_slot.strftime('%H:%M'),
+                'consultation_type': item.consultation_type,
+                'status': item.status,
+                'symptoms': item.symptoms,
+            }
+            for item in today_schedule
+        ],
     })

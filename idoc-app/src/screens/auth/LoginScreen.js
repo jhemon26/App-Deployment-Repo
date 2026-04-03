@@ -25,7 +25,24 @@ export default function LoginScreen({ navigation }) {
       await login(email.trim(), password);
       Toast.show({ type: 'success', text1: 'Welcome back!' });
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Login Failed', text2: error.message });
+      const message = error?.message || 'Login failed';
+      const normalized = message.toLowerCase();
+
+      if (normalized.includes('pending admin approval')) {
+        Toast.show({
+          type: 'info',
+          text1: 'Approval Pending',
+          text2: 'Your pharmacy/doctor account is waiting for admin approval.',
+        });
+        return;
+      }
+
+      if (normalized.includes('blocked')) {
+        Toast.show({ type: 'error', text1: 'Account Blocked', text2: message });
+        return;
+      }
+
+      Toast.show({ type: 'error', text1: 'Login Failed', text2: message });
     }
   };
 

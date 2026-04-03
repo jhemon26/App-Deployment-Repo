@@ -191,6 +191,15 @@ export const WebNavigator = () => {
             <Stack.Screen name="RoleHome" component={RoleHomeScreen} options={{ headerShown: false }} />
             <Stack.Screen name="WebHome" component={WebHomeScreen} options={{ headerShown: false }} />
             <Stack.Screen name="DoctorDetail" component={DoctorDetailScreen} options={{ title: 'Doctor Profile' }} />
+            <Stack.Screen name="Doctors" component={DoctorListScreen} options={{ title: 'Doctors' }} />
+            <Stack.Screen name="Pharmacy" component={PharmacyListScreen} options={{ title: 'Pharmacies' }} />
+            <Stack.Screen name="Bookings" component={MyBookingsScreen} options={{ title: 'My Bookings' }} />
+            <Stack.Screen name="Approvals" component={AdminApprovalsScreen} options={{ title: 'Pending Approvals' }} />
+            <Stack.Screen name="Users" component={AdminUsersScreen} options={{ title: 'User Management' }} />
+            <Stack.Screen name="Appointments" component={DoctorAppointmentsScreen} options={{ title: 'Appointments' }} />
+            <Stack.Screen name="Patients" component={DoctorPatientsScreen} options={{ title: 'Patients' }} />
+            <Stack.Screen name="Orders" component={PharmacyOrdersScreen} options={{ title: 'Orders' }} />
+            <Stack.Screen name="Inventory" component={PharmacyInventoryScreen} options={{ title: 'Inventory' }} />
             <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Book Appointment' }} />
             <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking Details' }} />
             <Stack.Screen name="MedicineList" component={MedicineListScreen} options={{ title: 'Medicines' }} />

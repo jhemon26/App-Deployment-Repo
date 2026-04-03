@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Card, Avatar, Badge, Button, EmptyState, Chip } from '../../components/UIComponents';
 import { COLORS, FONTS, SPACING } from '../../utils/theme';
@@ -32,6 +33,12 @@ export default function AdminApprovalsScreen() {
   useEffect(() => {
     loadApprovals();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadApprovals();
+    }, [])
+  );
 
   const getApprovalType = (item) => item.type || item.role;
 

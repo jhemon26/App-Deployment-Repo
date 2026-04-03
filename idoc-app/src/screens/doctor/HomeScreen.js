@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../context/AuthContext';
 import { Card, StatCard, Avatar, Badge, SectionHeader } from '../../components/UIComponents';
@@ -10,6 +10,8 @@ import useRoleDashboard from '../../hooks/useRoleDashboard';
 export default function DoctorHomeScreen({ navigation }) {
   const { user } = useAuth();
   const { dashboard, loading, error, refresh } = useRoleDashboard('doctor');
+  const { width } = useWindowDimensions();
+  const compact = width < 900;
 
   const appointments = (dashboard?.appointments || dashboard?.today_schedule || [])
     .slice(0, 6)
@@ -54,16 +56,32 @@ export default function DoctorHomeScreen({ navigation }) {
         </TouchableOpacity>
       )}
 
-      {/* Stats */}
-      <View style={styles.statsRow}>
-        <StatCard label="Today" value={String(todayAppointments)} color={COLORS.primary} icon={<Ionicons name="calendar-outline" size={16} color={COLORS.primary} />} />
-        <View style={{ width: SPACING.md }} />
-        <StatCard label="Patients" value={String(totalPatients)} color={COLORS.info} icon={<Ionicons name="people-outline" size={16} color={COLORS.info} />} />
+      {/* Quick actions */}
+      <View style={styles.quickActions}>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Appointments')}>
+          <Ionicons name="calendar-outline" size={16} color={COLORS.primary} />
+          <Text style={styles.quickActionText}>Appointments</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Patients')}>
+          <Ionicons name="people-outline" size={16} color={COLORS.info} />
+          <Text style={styles.quickActionText}>Patients</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Profile')}>
+          <Ionicons name="person-outline" size={16} color={COLORS.success} />
+          <Text style={styles.quickActionText}>Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={refresh}>
+          <Ionicons name="refresh-outline" size={16} color={COLORS.warning} />
+          <Text style={styles.quickActionText}>Refresh</Text>
+        </TouchableOpacity>
       </View>
-      <View style={[styles.statsRow, { marginTop: SPACING.md }]}>
-        <StatCard label="Earnings" value={`฿${Number(totalEarnings).toLocaleString()}`} color={COLORS.success} icon={<Ionicons name="cash-outline" size={16} color={COLORS.success} />} />
-        <View style={{ width: SPACING.md }} />
-        <StatCard label="Rating" value={String(rating)} color={COLORS.warning} icon={<Ionicons name="star-outline" size={16} color={COLORS.warning} />} />
+
+      {/* Stats */}
+      <View style={[styles.statsGrid, compact && styles.statsGridCompact]}>
+        <StatCard style={styles.statCard} label="Today" value={String(todayAppointments)} color={COLORS.primary} icon={<Ionicons name="calendar-outline" size={16} color={COLORS.primary} />} />
+        <StatCard style={styles.statCard} label="Patients" value={String(totalPatients)} color={COLORS.info} icon={<Ionicons name="people-outline" size={16} color={COLORS.info} />} />
+        <StatCard style={styles.statCard} label="Earnings" value={`฿${Number(totalEarnings).toLocaleString()}`} color={COLORS.success} icon={<Ionicons name="cash-outline" size={16} color={COLORS.success} />} />
+        <StatCard style={styles.statCard} label="Rating" value={String(rating)} color={COLORS.warning} icon={<Ionicons name="star-outline" size={16} color={COLORS.warning} />} />
       </View>
 
       {/* Today's Schedule */}
@@ -111,7 +129,37 @@ export default function DoctorHomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingTop: 60, paddingBottom: SPACING.lg },
-  statsRow: { flexDirection: 'row', paddingHorizontal: SPACING.xl },
+  quickActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+  quickActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.bgElevated,
+    borderColor: COLORS.border,
+    borderWidth: 1,
+    borderRadius: RADIUS.full,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  quickActionText: { ...FONTS.captionBold, color: COLORS.text, marginLeft: 6 },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: SPACING.xl,
+    justifyContent: 'space-between',
+  },
+  statsGridCompact: {
+    gap: SPACING.md,
+  },
+  statCard: {
+    width: '48%',
+    marginBottom: SPACING.md,
+  },
   stateWrap: {
     marginHorizontal: SPACING.xl,
     marginBottom: SPACING.md,

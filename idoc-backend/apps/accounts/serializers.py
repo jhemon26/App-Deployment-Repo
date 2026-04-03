@@ -108,7 +108,7 @@ class RegisterSerializer(serializers.Serializer):
             PharmacyProfile.objects.create(
                 user=user,
                 pharmacy_name=pharmacy_fields.get('pharmacy_name', ''),
-                license_number=pharmacy_fields.get('pharmacy_license', ''),
+                license_number=pharmacy_fields.get('license_number', ''),
                 address=pharmacy_fields.get('address', ''),
             )
 
