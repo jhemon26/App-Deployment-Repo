@@ -80,7 +80,7 @@ export default function App() {
               </Text>
             </View>
           )}
-          {Platform.OS !== 'web' ? <Toast config={toastConfig} /> : null}
+          <Toast config={toastConfig} />
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

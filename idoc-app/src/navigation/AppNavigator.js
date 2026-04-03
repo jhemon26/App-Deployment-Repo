@@ -47,6 +47,7 @@ import ChatScreen from '../screens/shared/ChatScreen';
 import ProfileScreen from '../screens/shared/ProfileScreen';
 import NotificationsScreen from '../screens/shared/NotificationsScreen';
 import VideoCallScreen from '../screens/shared/VideoCallScreen';
+import ChangePasswordScreen from '../screens/shared/ChangePasswordScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -220,6 +221,7 @@ export const AppNavigator = () => {
             <Stack.Screen name="VideoCall" component={VideoCallScreen} options={{ headerShown: false, presentation: 'fullScreenModal' }} />
             <Stack.Screen name="Prescription" component={PrescriptionScreen} options={{ title: 'Write Prescription' }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Account Security' }} />
             <Stack.Screen name="MyOrders" component={MyOrdersScreen} options={{ title: 'My Orders' }} />
             <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ title: 'Order Details' }} />
           </>

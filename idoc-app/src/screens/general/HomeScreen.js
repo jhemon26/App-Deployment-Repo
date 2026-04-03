@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Activ
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../context/AuthContext';
 import { Card, Avatar, Badge, SectionHeader } from '../../components/UIComponents';
+import AccountQuickMenu from '../../components/AccountQuickMenu';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../utils/theme';
 import useRoleDashboard from '../../hooks/useRoleDashboard';
 
@@ -58,12 +59,15 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.greeting}>Hello,</Text>
           <Text style={styles.userName}>{user?.name || 'Patient'}</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
-          <View style={styles.notifBtn}>
-            <Ionicons name="notifications-outline" size={20} color={COLORS.text} />
-            <View style={styles.notifDot} />
-          </View>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
+            <View style={styles.notifBtn}>
+              <Ionicons name="notifications-outline" size={20} color={COLORS.text} />
+              <View style={styles.notifDot} />
+            </View>
+          </TouchableOpacity>
+          <AccountQuickMenu navigation={navigation} />
+        </View>
       </View>
 
       {loading && (

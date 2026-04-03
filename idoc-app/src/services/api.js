@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 import storage from '../utils/storage';
 
 // ─── Django server URL ───
@@ -6,7 +7,9 @@ import storage from '../utils/storage';
 // 10.0.2.2 works for Android Emulator
 // Use your machine's LAN IP (e.g. 192.168.x.x) for physical devices
 // Use deployed URL (e.g. https://idoc-backend.railway.app/api/v1) for production
-const BASE_URL = 'https://idoc-backend-prod-production.up.railway.app/api/v1';
+const PROD_BASE_URL = 'https://idoc-backend-prod-production.up.railway.app/api/v1';
+const LOCAL_WEB_BASE_URL = 'http://localhost:8000/api/v1';
+const BASE_URL = (Platform.OS === 'web' && __DEV__) ? LOCAL_WEB_BASE_URL : PROD_BASE_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,

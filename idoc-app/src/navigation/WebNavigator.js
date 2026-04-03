@@ -96,6 +96,7 @@ const ChatScreen = loadScreen('Chat', () => require('../screens/shared/ChatScree
 const ProfileScreen = loadScreen('Profile', () => require('../screens/shared/ProfileScreen'));
 const NotificationsScreen = loadScreen('Notifications', () => require('../screens/shared/NotificationsScreen'));
 const VideoCallScreen = loadScreen('Video Call', () => require('../screens/shared/VideoCallScreen'));
+const ChangePasswordScreen = loadScreen('Change Password', () => require('../screens/shared/ChangePasswordScreen'));
 
 // Shared stack screens
 const DoctorDetailScreen = loadScreen('Doctor Detail', () => require('../screens/general/DoctorDetailScreen'));
@@ -198,6 +199,8 @@ export const WebNavigator = () => {
             <Stack.Screen name="VideoCall" component={VideoCallScreen} options={{ title: 'Video Call' }} />
             <Stack.Screen name="Prescription" component={PrescriptionScreen} options={{ title: 'Write Prescription' }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+            <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Account Security' }} />
             <Stack.Screen name="MyOrders" component={MyOrdersScreen} options={{ title: 'My Orders' }} />
             <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ title: 'Order Details' }} />
           </>

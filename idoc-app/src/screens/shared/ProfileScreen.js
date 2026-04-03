@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../context/AuthContext';
@@ -6,7 +6,7 @@ import { Card, Avatar, Badge, Button, Input, Divider } from '../../components/UI
 import { COLORS, FONTS, SPACING, RADIUS, ROLE_CONFIG } from '../../utils/theme';
 import Toast from 'react-native-toast-message';
 
-export default function ProfileScreen({ navigation }) {
+export default function ProfileScreen({ navigation, route }) {
   const { user, logout, updateProfile } = useAuth();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -21,6 +21,7 @@ export default function ProfileScreen({ navigation }) {
   const [address, setAddress] = useState(user?.pharmacy_profile?.address || '');
   const [deliveryTime, setDeliveryTime] = useState(user?.pharmacy_profile?.delivery_time || '');
   const [activeInfoItem, setActiveInfoItem] = useState(null);
+  const [activePanel, setActivePanel] = useState(null);
 
   const roleConfig = ROLE_CONFIG[user?.role] || ROLE_CONFIG.general;
   const hasDoctorProfile = user?.role === 'doctor';
@@ -35,6 +36,16 @@ export default function ProfileScreen({ navigation }) {
     }
     return 'Keep your patient profile up to date.';
   }, [hasDoctorProfile, hasPharmacyProfile]);
+
+  useEffect(() => {
+    const focus = route?.params?.focus;
+    if (focus === 'login-details') {
+      setActivePanel('login-details');
+    }
+    if (focus === 'profile-picture') {
+      setActivePanel('profile-picture');
+    }
+  }, [route?.params?.focus]);
 
   const handleSave = async () => {
     try {
@@ -71,6 +82,12 @@ export default function ProfileScreen({ navigation }) {
     logout();
     Toast.show({ type: 'info', text1: 'Logged out' });
   };
+
+  const accountItems = [
+    { key: 'login-details', label: 'Login Details', icon: 'mail-outline' },
+    { key: 'password-management', label: 'Password Management', icon: 'key-outline', screen: 'ChangePassword' },
+    { key: 'profile-picture', label: 'Profile Picture', icon: 'image-outline' },
+  ];
 
   const menuItems = [
     { label: 'Notifications', icon: 'notifications-outline', screen: 'Notifications' },
@@ -147,6 +164,68 @@ export default function ProfileScreen({ navigation }) {
               <Text style={{ ...FONTS.bodyBold, color: COLORS.text }}>Edit Profile</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+          </View>
+        </Card>
+      )}
+
+      <Card style={{ marginHorizontal: SPACING.xl, marginTop: SPACING.lg }}>
+        <Text style={{ ...FONTS.h4, color: COLORS.text, marginBottom: SPACING.sm }}>Account Settings</Text>
+        {accountItems.map((item, idx) => (
+          <TouchableOpacity
+            key={item.key}
+            onPress={() => {
+              if (item.screen) {
+                navigation.navigate(item.screen);
+              } else {
+                setActivePanel(item.key);
+              }
+            }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingVertical: SPACING.md,
+              borderTopWidth: idx === 0 ? 0 : 1,
+              borderTopColor: COLORS.border,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name={item.icon} size={18} color={COLORS.primary} style={{ marginRight: SPACING.md }} />
+              <Text style={{ ...FONTS.body, color: COLORS.text }}>{item.label}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+          </TouchableOpacity>
+        ))}
+      </Card>
+
+      {activePanel === 'login-details' && (
+        <Card style={{ marginHorizontal: SPACING.xl, marginTop: SPACING.md }}>
+          <Text style={{ ...FONTS.h4, color: COLORS.text }}>Login Details</Text>
+          <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: SPACING.sm }}>Email: {user?.email || 'N/A'}</Text>
+          <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 4 }}>Role: {roleConfig.label}</Text>
+          <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 4 }}>Approved: {user?.is_approved ? 'Yes' : 'Pending'}</Text>
+          <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 4 }}>Blocked: {user?.is_blocked ? 'Yes' : 'No'}</Text>
+          <View style={{ marginTop: SPACING.md }}>
+            <Button title="Close" variant="outline" onPress={() => setActivePanel(null)} />
+          </View>
+        </Card>
+      )}
+
+      {activePanel === 'profile-picture' && (
+        <Card style={{ marginHorizontal: SPACING.xl, marginTop: SPACING.md }}>
+          <Text style={{ ...FONTS.h4, color: COLORS.text }}>Profile Picture</Text>
+          <Text style={{ ...FONTS.body, color: COLORS.textSecondary, marginTop: SPACING.sm }}>
+            Avatar upload can be managed from profile edit in this build. Full gallery/camera upload workflow can be added next.
+          </Text>
+          <View style={{ marginTop: SPACING.md }}>
+            <Button
+              title="Open Profile Edit"
+              onPress={() => {
+                setActivePanel(null);
+                setEditing(true);
+                Toast.show({ type: 'info', text1: 'Profile editor opened' });
+              }}
+            />
           </View>
         </Card>
       )}
