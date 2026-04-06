@@ -2,10 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../context/AuthContext';
-import { Card, StatCard, Badge, SectionHeader } from '../../components/UIComponents';
+import { Card, StatCard, SectionHeader } from '../../components/UIComponents';
 import AccountQuickMenu from '../../components/AccountQuickMenu';
 import { COLORS, FONTS, SPACING } from '../../utils/theme';
 import useRoleDashboard from '../../hooks/useRoleDashboard';
+
 const typeColor = { approval: COLORS.warning, issue: COLORS.danger, payment: COLORS.info, system: COLORS.success };
 const typeIcon = { approval: 'time-outline', issue: 'alert-circle-outline', payment: 'card-outline', system: 'settings-outline' };
 
@@ -17,14 +18,30 @@ export default function AdminHomeScreen({ navigation }) {
   const usersByRole = dashboard?.users_by_role || {};
   const activities = (dashboard?.recent_activity || []).slice(0, 8);
 
-  const totalUsers = dashboard?.total_users ?? 4521;
-  const totalDoctors = usersByRole.doctor ?? 156;
-  const totalPharmacies = usersByRole.pharmacy ?? 42;
-  const totalRevenue = dashboard?.total_revenue ?? 1200000;
-  const pendingApprovals = dashboard?.pending_approvals ?? 5;
-  const blockedUsers = dashboard?.blocked_users ?? 3;
+  const totalUsers = Number(dashboard?.total_users ?? 0);
+  const totalDoctors = Number(usersByRole.doctor ?? dashboard?.total_doctors ?? 0);
+  const totalPharmacies = Number(usersByRole.pharmacy ?? dashboard?.total_pharmacies ?? 0);
+  const totalRevenueValue = Number(dashboard?.total_revenue ?? dashboard?.revenue ?? 0);
+  const pendingApprovals = Number(dashboard?.pending_approvals ?? 0);
+  const blockedUsers = Number(dashboard?.blocked_users ?? 0);
 
-  const revenueText = `฿${Number(totalRevenue).toLocaleString()}`;
+  const revenueText = `฿${Number.isFinite(totalRevenueValue) ? totalRevenueValue.toLocaleString() : '0'}`;
+
+  const goUsers = (initialTab) => {
+    navigation.navigate('Users', {
+      initialTab,
+      requestRefreshAt: Date.now(),
+    });
+  };
+
+  const statPress = {
+    totalUsers: () => goUsers('All'),
+    doctors: () => goUsers('Doctors'),
+    pharmacies: () => goUsers('Pharmacies'),
+    revenue: () => refresh(),
+    pending: () => navigation.navigate('Approvals', { initialFilter: 'all', requestRefreshAt: Date.now() }),
+    blocked: () => goUsers('Blocked'),
+  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -54,11 +71,14 @@ export default function AdminHomeScreen({ navigation }) {
       )}
 
       <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Approvals')}>
+        <TouchableOpacity
+          style={styles.quickActionBtn}
+          onPress={() => navigation.navigate('Approvals', { initialFilter: 'all', requestRefreshAt: Date.now() })}
+        >
           <Ionicons name="checkmark-done-outline" size={16} color={COLORS.warning} />
           <Text style={styles.quickActionText}>Approvals Queue</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Users')}>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => goUsers('All')}>
           <Ionicons name="people-outline" size={16} color={COLORS.info} />
           <Text style={styles.quickActionText}>Manage Users</Text>
         </TouchableOpacity>
@@ -73,12 +93,24 @@ export default function AdminHomeScreen({ navigation }) {
       </View>
 
       <View style={[styles.statsGrid, compact && styles.statsGridCompact]}>
-        <StatCard style={styles.statCard} label="Total Users" value={String(totalUsers)} color={COLORS.info} icon={<Ionicons name="people-outline" size={16} color={COLORS.info} />} />
-        <StatCard style={styles.statCard} label="Doctors" value={String(totalDoctors)} color={COLORS.doctor} icon={<Ionicons name="medkit-outline" size={16} color={COLORS.doctor} />} />
-        <StatCard style={styles.statCard} label="Pharmacies" value={String(totalPharmacies)} color={COLORS.pharmacy} icon={<Ionicons name="medical-outline" size={16} color={COLORS.pharmacy} />} />
-        <StatCard style={styles.statCard} label="Revenue" value={revenueText} color={COLORS.success} icon={<Ionicons name="cash-outline" size={16} color={COLORS.success} />} />
-        <StatCard style={styles.statCard} label="Pending" value={String(pendingApprovals)} color={COLORS.warning} icon={<Ionicons name="time-outline" size={16} color={COLORS.warning} />} />
-        <StatCard style={styles.statCard} label="Blocked" value={String(blockedUsers)} color={COLORS.danger} icon={<Ionicons name="ban-outline" size={16} color={COLORS.danger} />} />
+        <TouchableOpacity activeOpacity={0.8} style={styles.statCardTap} onPress={statPress.totalUsers}>
+          <StatCard style={styles.statCard} label="Total Users" value={String(totalUsers)} color={COLORS.info} icon={<Ionicons name="people-outline" size={16} color={COLORS.info} />} />
+        </TouchableOpacity>
+        <TouchableOpacity activeOpacity={0.8} style={styles.statCardTap} onPress={statPress.doctors}>
+          <StatCard style={styles.statCard} label="Doctors" value={String(totalDoctors)} color={COLORS.doctor} icon={<Ionicons name="medkit-outline" size={16} color={COLORS.doctor} />} />
+        </TouchableOpacity>
+        <TouchableOpacity activeOpacity={0.8} style={styles.statCardTap} onPress={statPress.pharmacies}>
+          <StatCard style={styles.statCard} label="Pharmacies" value={String(totalPharmacies)} color={COLORS.pharmacy} icon={<Ionicons name="medical-outline" size={16} color={COLORS.pharmacy} />} />
+        </TouchableOpacity>
+        <TouchableOpacity activeOpacity={0.8} style={styles.statCardTap} onPress={statPress.revenue}>
+          <StatCard style={styles.statCard} label="Revenue" value={revenueText} color={COLORS.success} icon={<Ionicons name="cash-outline" size={16} color={COLORS.success} />} />
+        </TouchableOpacity>
+        <TouchableOpacity activeOpacity={0.8} style={styles.statCardTap} onPress={statPress.pending}>
+          <StatCard style={styles.statCard} label="Pending" value={String(pendingApprovals)} color={COLORS.warning} icon={<Ionicons name="time-outline" size={16} color={COLORS.warning} />} />
+        </TouchableOpacity>
+        <TouchableOpacity activeOpacity={0.8} style={styles.statCardTap} onPress={statPress.blocked}>
+          <StatCard style={styles.statCard} label="Blocked" value={String(blockedUsers)} color={COLORS.danger} icon={<Ionicons name="ban-outline" size={16} color={COLORS.danger} />} />
+        </TouchableOpacity>
       </View>
 
       <SectionHeader title="Recent Activity" actionText="Refresh" onAction={refresh} style={{ marginTop: SPACING.xl }} />
@@ -138,9 +170,13 @@ const styles = StyleSheet.create({
   statsGridCompact: {
     gap: SPACING.md,
   },
-  statCard: {
+  statCardTap: {
     width: '48%',
     marginBottom: SPACING.md,
+  },
+  statCard: {
+    width: '100%',
+    marginBottom: 0,
   },
   stateWrap: {
     marginHorizontal: SPACING.xl,

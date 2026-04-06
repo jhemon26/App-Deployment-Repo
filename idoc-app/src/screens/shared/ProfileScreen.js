@@ -31,48 +31,26 @@ export default function ProfileScreen({ navigation, route }) {
   const hasPharmacyProfile = user?.role === 'pharmacy';
 
   const profileSubtitle = useMemo(() => {
-    if (hasDoctorProfile) {
-      return 'Update your clinic profile and availability details.';
-    }
-    if (hasPharmacyProfile) {
-      return 'Update your pharmacy information and delivery settings.';
-    }
-    return 'Keep your patient profile up to date.';
+    if (hasDoctorProfile) return 'Doctor · Approved practitioner';
+    if (hasPharmacyProfile) return 'Pharmacy · Registered provider';
+    return 'Patient · I Doc member';
   }, [hasDoctorProfile, hasPharmacyProfile]);
 
   useEffect(() => {
     const focus = route?.params?.focus;
-    if (focus === 'login-details') {
-      setActivePanel('login-details');
-    }
-    if (focus === 'profile-picture') {
-      setActivePanel('profile-picture');
-    }
+    if (focus === 'login-details') setActivePanel('login-details');
+    if (focus === 'profile-picture') setActivePanel('profile-picture');
   }, [route?.params?.focus]);
 
   const handleSave = async () => {
     try {
       const payload = { name, phone };
-
       if (hasDoctorProfile) {
-        payload.doctor_profile = {
-          specialty,
-          experience,
-          fee,
-          license_number: licenseNumber,
-          bio,
-        };
+        payload.doctor_profile = { specialty, experience, fee, license_number: licenseNumber, bio };
       }
-
       if (hasPharmacyProfile) {
-        payload.pharmacy_profile = {
-          pharmacy_name: pharmacyName,
-          license_number: pharmacyLicense,
-          address,
-          delivery_time: deliveryTime,
-        };
+        payload.pharmacy_profile = { pharmacy_name: pharmacyName, license_number: pharmacyLicense, address, delivery_time: deliveryTime };
       }
-
       await updateProfile(payload);
       setEditing(false);
       Toast.show({ type: 'success', text1: 'Profile Updated' });
@@ -119,18 +97,18 @@ export default function ProfileScreen({ navigation, route }) {
   };
 
   const accountItems = [
-    { key: 'login-details', label: 'Login Details', icon: 'mail-outline' },
-    { key: 'password-management', label: 'Password Management', icon: 'key-outline', screen: 'ChangePassword' },
-    { key: 'profile-picture', label: 'Profile Picture', icon: 'image-outline' },
+    { key: 'login-details', label: 'Login Details', icon: 'mail-outline', sub: user?.email || '' },
+    { key: 'password-management', label: 'Password', icon: 'key-outline', screen: 'ChangePassword', sub: 'Change your password' },
+    { key: 'profile-picture', label: 'Profile Picture', icon: 'image-outline', sub: 'Update your avatar' },
   ];
 
   const menuItems = [
-    { label: 'Notifications', icon: 'notifications-outline', screen: 'Notifications' },
-    { label: 'Payment History', icon: 'card-outline', screen: 'MyOrders' },
-    { label: 'Help & Support', icon: 'help-circle-outline', content: 'For urgent issues, use in-app chat or contact support@idoc.app. We reply within 24 hours.' },
-    { label: 'Privacy Policy', icon: 'shield-checkmark-outline', content: 'I Doc stores only required healthcare data. We protect all account data with role-based access and secure token authentication.' },
-    { label: 'Terms of Service', icon: 'document-text-outline', content: 'Consultations are provided by approved professionals. Medicine orders and payments follow platform terms and local regulations.' },
-    { label: 'About I Doc', icon: 'information-circle-outline', content: 'I Doc is a role-based healthcare platform connecting patients, doctors, pharmacies, and admins in one secure system.' },
+    { label: 'Notifications', icon: 'notifications-outline', screen: 'Notifications', sub: 'Your alerts and updates' },
+    { label: 'Payment History', icon: 'card-outline', screen: 'MyOrders', sub: 'Orders and transactions' },
+    { label: 'Help & Support', icon: 'help-circle-outline', sub: 'Get assistance', content: 'For urgent issues, use in-app chat or contact support@idoc.app. We reply within 24 hours.' },
+    { label: 'Privacy Policy', icon: 'shield-checkmark-outline', sub: 'How we protect your data', content: 'I Doc stores only required healthcare data. We protect all account data with role-based access and secure token authentication.' },
+    { label: 'Terms of Service', icon: 'document-text-outline', sub: 'Platform usage terms', content: 'Consultations are provided by approved professionals. Medicine orders and payments follow platform terms and local regulations.' },
+    { label: 'About I Doc', icon: 'information-circle-outline', sub: 'Version 1.0.0', content: 'I Doc is a role-based healthcare platform connecting patients, doctors, pharmacies, and admins in one secure system.' },
   ];
 
   const handleMenuPress = (item) => {
@@ -143,22 +121,32 @@ export default function ProfileScreen({ navigation, route }) {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <Text style={{ ...FONTS.h2, color: COLORS.text }}>Profile</Text>
-      </View>
-
-      {/* Profile Card */}
-      <Card style={styles.profileCard}>
-        <View style={{ alignItems: 'center' }}>
-          <Avatar name={user?.name} size={80} color={roleConfig.color} />
-          <Text style={{ ...FONTS.h3, color: COLORS.text, marginTop: SPACING.md }}>{user?.name}</Text>
-          <Text style={{ ...FONTS.body, color: COLORS.textSecondary, marginTop: 2 }}>{user?.email}</Text>
-          <Badge text={roleConfig.label} color={roleConfig.color} style={{ marginTop: SPACING.sm }} />
-          <Text style={{ ...FONTS.caption, color: COLORS.textMuted, textAlign: 'center', marginTop: SPACING.sm, paddingHorizontal: SPACING.lg }}>
-            {profileSubtitle}
-          </Text>
+      {/* Profile Banner */}
+      <View style={[styles.banner, { borderBottomColor: roleConfig.color }]}>
+        <View style={[styles.avatarRing, { borderColor: roleConfig.color + '60' }]}>
+          {user?.profile_picture ? (
+            <Image
+              source={{ uri: user.profile_picture }}
+              style={{ width: 68, height: 68, borderRadius: 34 }}
+            />
+          ) : (
+            <Avatar name={user?.name} size={68} color={roleConfig.color} />
+          )}
         </View>
-      </Card>
+        <Text style={{ ...FONTS.h4, color: COLORS.text, marginTop: SPACING.sm }}>{user?.name}</Text>
+        <Text style={{ ...FONTS.small, color: COLORS.textSecondary, marginTop: 2 }}>{user?.email}</Text>
+        <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xs }}>
+          <Badge text={roleConfig.label} color={roleConfig.color} size="sm" />
+          <Badge
+            text={user?.is_approved ? 'Approved' : 'Pending'}
+            color={user?.is_approved ? COLORS.success : COLORS.warning}
+            size="sm"
+          />
+        </View>
+        <Text style={{ ...FONTS.small, color: COLORS.textMuted, marginTop: SPACING.xs }}>
+          {profileSubtitle}
+        </Text>
+      </View>
 
       {/* Edit Profile */}
       {editing ? (
@@ -185,64 +173,73 @@ export default function ProfileScreen({ navigation, route }) {
           )}
           <View style={{ flexDirection: 'row', gap: SPACING.md }}>
             <Button title="Cancel" variant="outline" onPress={() => setEditing(false)} style={{ flex: 1 }} />
-            <Button title="Save" onPress={handleSave} style={{ flex: 1 }} />
+            <Button title="Save Changes" onPress={handleSave} style={{ flex: 1 }} />
           </View>
         </Card>
       ) : (
-        <Card
+        <TouchableOpacity
+          style={[styles.editRow, { marginHorizontal: SPACING.xl, marginTop: SPACING.lg }]}
           onPress={() => setEditing(true)}
-          style={{ marginHorizontal: SPACING.xl, marginTop: SPACING.lg, padding: SPACING.md }}
+          activeOpacity={0.7}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="create-outline" size={18} color={COLORS.primary} style={{ marginRight: SPACING.md }} />
-              <Text style={{ ...FONTS.bodyBold, color: COLORS.text }}>Edit Profile</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={[styles.menuIcon, { backgroundColor: COLORS.primary + '15' }]}>
+              <Ionicons name="create-outline" size={18} color={COLORS.primary} />
             </View>
-            <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+            <View style={{ marginLeft: SPACING.md }}>
+              <Text style={{ ...FONTS.bodyBold, color: COLORS.text }}>Edit Profile</Text>
+              <Text style={{ ...FONTS.small, color: COLORS.textMuted, marginTop: 1 }}>Update your personal info</Text>
+            </View>
           </View>
-        </Card>
+          <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+        </TouchableOpacity>
       )}
 
-      <Card style={{ marginHorizontal: SPACING.xl, marginTop: SPACING.lg }}>
-        <Text style={{ ...FONTS.h4, color: COLORS.text, marginBottom: SPACING.sm }}>Account Settings</Text>
+      {/* Account Settings */}
+      <Text style={styles.groupLabel}>Account</Text>
+      <Card style={styles.menuGroup}>
         {accountItems.map((item, idx) => (
           <TouchableOpacity
             key={item.key}
             onPress={() => {
-              if (item.screen) {
-                navigation.navigate(item.screen);
-              } else {
-                setActivePanel(item.key);
-              }
+              if (item.screen) navigation.navigate(item.screen);
+              else setActivePanel(item.key);
             }}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingVertical: SPACING.md,
-              borderTopWidth: idx === 0 ? 0 : 1,
-              borderTopColor: COLORS.border,
-            }}
+            style={[styles.menuRow, idx > 0 && { borderTopWidth: 1, borderTopColor: COLORS.border }]}
+            activeOpacity={0.7}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name={item.icon} size={18} color={COLORS.primary} style={{ marginRight: SPACING.md }} />
-              <Text style={{ ...FONTS.body, color: COLORS.text }}>{item.label}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <View style={[styles.menuIcon, { backgroundColor: COLORS.primary + '15' }]}>
+                <Ionicons name={item.icon} size={18} color={COLORS.primary} />
+              </View>
+              <View style={{ marginLeft: SPACING.md, flex: 1 }}>
+                <Text style={{ ...FONTS.body, color: COLORS.text }}>{item.label}</Text>
+                {item.sub ? <Text style={{ ...FONTS.small, color: COLORS.textMuted, marginTop: 1 }} numberOfLines={1}>{item.sub}</Text> : null}
+              </View>
             </View>
             <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
           </TouchableOpacity>
         ))}
       </Card>
 
+      {/* Expanded panels */}
       {activePanel === 'login-details' && (
         <Card style={{ marginHorizontal: SPACING.xl, marginTop: SPACING.md }}>
           <Text style={{ ...FONTS.h4, color: COLORS.text }}>Login Details</Text>
-          <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: SPACING.sm }}>Email: {user?.email || 'N/A'}</Text>
-          <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 4 }}>Role: {roleConfig.label}</Text>
-          <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 4 }}>Approved: {user?.is_approved ? 'Yes' : 'Pending'}</Text>
-          <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 4 }}>Blocked: {user?.is_blocked ? 'Yes' : 'No'}</Text>
-          <View style={{ marginTop: SPACING.md }}>
-            <Button title="Close" variant="outline" onPress={() => setActivePanel(null)} />
+          <View style={{ marginTop: SPACING.md, gap: SPACING.sm }}>
+            {[
+              { label: 'Email', value: user?.email || 'N/A', icon: 'mail-outline' },
+              { label: 'Role', value: roleConfig.label, icon: 'person-outline' },
+              { label: 'Account Status', value: user?.is_approved ? 'Approved' : 'Pending', icon: 'checkmark-circle-outline' },
+            ].map((row, i) => (
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name={row.icon} size={14} color={COLORS.textSecondary} style={{ marginRight: SPACING.sm }} />
+                <Text style={{ ...FONTS.caption, color: COLORS.textSecondary }}>{row.label}: </Text>
+                <Text style={{ ...FONTS.captionBold, color: COLORS.text }}>{row.value}</Text>
+              </View>
+            ))}
           </View>
+          <Button title="Close" variant="outline" onPress={() => setActivePanel(null)} style={{ marginTop: SPACING.md }} />
         </Card>
       )}
 
@@ -264,41 +261,43 @@ export default function ProfileScreen({ navigation, route }) {
             onPress={handlePickPhoto}
             loading={uploadingPhoto}
           />
-          <View style={{ marginTop: SPACING.sm }}>
-            <Button title="Close" variant="outline" onPress={() => setActivePanel(null)} />
-          </View>
+          <Button title="Close" variant="outline" onPress={() => setActivePanel(null)} style={{ marginTop: SPACING.sm }} />
         </Card>
       )}
 
-      {/* Menu Items */}
-      <View style={{ marginTop: SPACING.xl }}>
-        {menuItems.map((item, index) => (
-          <Card
-            key={index}
+      {/* General menu */}
+      <Text style={styles.groupLabel}>More</Text>
+      <Card style={styles.menuGroup}>
+        {menuItems.map((item, idx) => (
+          <TouchableOpacity
+            key={idx}
             onPress={() => handleMenuPress(item)}
-            style={{ marginHorizontal: SPACING.xl, marginBottom: SPACING.sm, padding: SPACING.md }}
+            style={[styles.menuRow, idx > 0 && { borderTopWidth: 1, borderTopColor: COLORS.border }]}
+            activeOpacity={0.7}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Ionicons name={item.icon} size={18} color={COLORS.primary} style={{ marginRight: SPACING.md }} />
-                <Text style={{ ...FONTS.body, color: COLORS.text }}>{item.label}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <View style={[styles.menuIcon, { backgroundColor: COLORS.bgElevated }]}>
+                <Ionicons name={item.icon} size={18} color={COLORS.textSecondary} />
               </View>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+              <View style={{ marginLeft: SPACING.md, flex: 1 }}>
+                <Text style={{ ...FONTS.body, color: COLORS.text }}>{item.label}</Text>
+                {item.sub ? <Text style={{ ...FONTS.small, color: COLORS.textMuted, marginTop: 1 }}>{item.sub}</Text> : null}
+              </View>
             </View>
-          </Card>
+            <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+          </TouchableOpacity>
         ))}
-      </View>
+      </Card>
 
+      {/* Info panel */}
       {activeInfoItem && (
-        <Card style={{ marginHorizontal: SPACING.xl, marginTop: SPACING.md }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Card style={{ marginHorizontal: SPACING.xl, marginTop: SPACING.md, backgroundColor: COLORS.bgElevated, borderColor: COLORS.border, borderWidth: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm }}>
             <Ionicons name={activeInfoItem.icon} size={18} color={COLORS.primary} style={{ marginRight: SPACING.sm }} />
             <Text style={{ ...FONTS.h4, color: COLORS.text }}>{activeInfoItem.label}</Text>
           </View>
-          <Text style={{ ...FONTS.body, color: COLORS.textSecondary, marginTop: SPACING.sm }}>{activeInfoItem.content}</Text>
-          <View style={{ marginTop: SPACING.md }}>
-            <Button title="Close" variant="outline" color={COLORS.primary} onPress={() => setActiveInfoItem(null)} />
-          </View>
+          <Text style={{ ...FONTS.body, color: COLORS.textSecondary, lineHeight: 22 }}>{activeInfoItem.content}</Text>
+          <Button title="Close" variant="outline" color={COLORS.primary} onPress={() => setActiveInfoItem(null)} style={{ marginTop: SPACING.md }} />
         </Card>
       )}
 
@@ -318,6 +317,55 @@ export default function ProfileScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  header: { paddingHorizontal: SPACING.xl, paddingTop: 60, paddingBottom: SPACING.lg },
-  profileCard: { marginHorizontal: SPACING.xl, paddingVertical: SPACING.xxl },
+  banner: {
+    alignItems: 'center',
+    paddingTop: 52,
+    paddingBottom: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    backgroundColor: COLORS.bgCard,
+    borderBottomWidth: 3,
+  },
+  avatarRing: {
+    padding: 3,
+    borderRadius: RADIUS.full,
+    borderWidth: 2,
+  },
+  editRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.bgCard,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
+  groupLabel: {
+    ...FONTS.captionBold,
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    paddingHorizontal: SPACING.xl,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.sm,
+  },
+  menuGroup: {
+    marginHorizontal: SPACING.xl,
+    padding: 0,
+    overflow: 'hidden',
+  },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+  },
+  menuIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

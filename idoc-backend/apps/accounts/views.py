@@ -147,3 +147,41 @@ def forgot_password(request):
     except User.DoesNotExist:
         # Don't reveal whether email exists
         return Response({'message': 'Reset link sent to your email'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password(request):
+    """Reset password with email and new password (after forgot-password flow)."""
+    email = request.data.get('email')
+    new_password = request.data.get('new_password')
+    confirm_password = request.data.get('confirm_password')
+
+    if not all([email, new_password, confirm_password]):
+        return Response(
+            {'message': 'Email, new password, and confirm password are required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if new_password != confirm_password:
+        return Response(
+            {'message': 'Passwords do not match'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if len(new_password) < 8:
+        return Response(
+            {'message': 'Password must be at least 8 characters long'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        user = User.objects.get(email=email)
+        user.set_password(new_password)
+        user.save()
+        return Response({'message': 'Password reset successfully'}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response(
+            {'message': 'User not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )

@@ -22,9 +22,9 @@ export const Button = ({
   };
 
   const sizes = {
-    sm: { paddingVertical: 8, paddingHorizontal: 16, fontSize: 13 },
-    md: { paddingVertical: 14, paddingHorizontal: 24, fontSize: 15 },
-    lg: { paddingVertical: 18, paddingHorizontal: 32, fontSize: 17 },
+    sm: { paddingVertical: 6, paddingHorizontal: 12, fontSize: 12 },
+    md: { paddingVertical: 9, paddingHorizontal: 16, fontSize: 13 },
+    lg: { paddingVertical: 12, paddingHorizontal: 24, fontSize: 15 },
   };
 
   const v = variants[variant];
@@ -34,7 +34,7 @@ export const Button = ({
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.7}
+      activeOpacity={0.75}
       style={[
         {
           backgroundColor: v.bg,
@@ -46,7 +46,7 @@ export const Button = ({
           flexDirection: 'row',
           opacity: disabled ? 0.5 : 1,
           width: fullWidth ? '100%' : undefined,
-          borderWidth: v.border ? 1.5 : 0,
+          borderWidth: v.border ? 1 : 0,
           borderColor: v.border || 'transparent',
         },
         (variant === 'primary' || variant === 'danger') && SHADOWS.sm,
@@ -77,7 +77,7 @@ export const Input = ({
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <View style={[{ marginBottom: SPACING.lg }, style]}>
+    <View style={[{ marginBottom: SPACING.md }, style]}>
       {label && (
         <Text style={styles.inputLabel}>{label}</Text>
       )}
@@ -124,12 +124,12 @@ export const Input = ({
 };
 
 // ─── CARD ───
-export const Card = ({ children, style, onPress, padding = SPACING.lg }) => {
+export const Card = ({ children, style, onPress, padding = SPACING.md }) => {
   const Wrapper = onPress ? TouchableOpacity : View;
   return (
     <Wrapper
       onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
+      activeOpacity={onPress ? 0.75 : 1}
       style={[styles.card, { padding }, style]}
     >
       {children}
@@ -181,9 +181,9 @@ export const Avatar = ({ name, uri, size = 48, color = COLORS.primary, style }) 
 // ─── BADGE ───
 export const Badge = ({ text, color = COLORS.primary, size = 'md', style }) => {
   const sizes = {
-    sm: { px: 6, py: 2, fontSize: 10 },
-    md: { px: 10, py: 4, fontSize: 12 },
-    lg: { px: 14, py: 6, fontSize: 14 },
+    sm: { px: 5, py: 2, fontSize: 10 },
+    md: { px: 8, py: 3, fontSize: 11 },
+    lg: { px: 12, py: 5, fontSize: 13 },
   };
   const s = sizes[size];
 
@@ -208,7 +208,7 @@ export const Badge = ({ text, color = COLORS.primary, size = 'md', style }) => {
 };
 
 // ─── STAT CARD ───
-export const StatCard = ({ label, value, color = COLORS.primary, icon, trend, style }) => (
+export const StatCard = ({ label, value, color = COLORS.primary, icon, trend, style, onPress }) => (
   <Card style={[{ flex: 1 }, style]}>
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
       <View style={{ flex: 1 }}>
@@ -234,13 +234,13 @@ export const StatCard = ({ label, value, color = COLORS.primary, icon, trend, st
 
 // ─── EMPTY STATE ───
 export const EmptyState = ({ title, message, icon, action }) => (
-  <View style={{ alignItems: 'center', justifyContent: 'center', padding: SPACING.xxxxl }}>
-    {icon && <View style={{ marginBottom: SPACING.lg }}>{icon}</View>}
+  <View style={{ alignItems: 'center', justifyContent: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.xxxl }}>
+    {icon && <View style={{ marginBottom: SPACING.md }}>{icon}</View>}
     <Text style={{ ...FONTS.h3, color: COLORS.text, textAlign: 'center' }}>{title}</Text>
     <Text style={{ ...FONTS.body, color: COLORS.textSecondary, textAlign: 'center', marginTop: SPACING.sm }}>
       {message}
     </Text>
-    {action && <View style={{ marginTop: SPACING.xl, width: '60%' }}>{action}</View>}
+    {action && <View style={{ marginTop: SPACING.lg, width: '70%' }}>{action}</View>}
   </View>
 );
 
@@ -293,10 +293,13 @@ export const SearchBar = ({ value, onChangeText, placeholder = 'Search...', styl
 export const Chip = ({ label, active, onPress, color = COLORS.primary }) => (
   <TouchableOpacity
     onPress={onPress}
-    activeOpacity={0.7}
+    activeOpacity={0.75}
     style={{
-      paddingHorizontal: 16,
-      paddingVertical: 8,
+      paddingHorizontal: 10,
+      height: 30,
+      minHeight: 30,
+      justifyContent: 'center',
+      alignSelf: 'flex-start',
       borderRadius: RADIUS.full,
       backgroundColor: active ? color : COLORS.bgElevated,
       borderWidth: 1,
@@ -305,7 +308,8 @@ export const Chip = ({ label, active, onPress, color = COLORS.primary }) => (
     }}
   >
     <Text style={{
-      ...FONTS.captionBold,
+      fontSize: 12,
+      fontWeight: '600',
       color: active ? COLORS.textInverse : COLORS.textSecondary,
     }}>
       {label}
@@ -328,7 +332,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bgInput,
     borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.lg,
-    height: 52,
+    height: 46,
     borderWidth: 1.5,
     borderColor: COLORS.border,
   },
@@ -363,8 +367,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.bgInput,
     borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.lg,
-    height: 46,
+    paddingHorizontal: SPACING.md,
+    height: 36,
     borderWidth: 1,
     borderColor: COLORS.border,
   },

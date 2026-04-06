@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
 import { AuthProvider } from './src/context/AuthContext';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import { toastConfig } from './src/utils/toastConfig';
 import { COLORS } from './src/utils/theme';
 
@@ -66,23 +67,25 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <StatusBar style="light" />
-          {NavigatorComponent ? (
-            <NavigatorComponent />
-          ) : (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Platform.OS === 'web' ? '#ffffff' : COLORS.bg }}>
-              <ActivityIndicator size="large" color={Platform.OS === 'web' ? '#111111' : COLORS.primary} />
-              <Text style={{ marginTop: 12, color: Platform.OS === 'web' ? '#222222' : COLORS.textSecondary }}>
-                Loading app...
-              </Text>
-            </View>
-          )}
-          <Toast config={toastConfig} />
-        </AuthProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <StatusBar style="light" />
+            {NavigatorComponent ? (
+              <NavigatorComponent />
+            ) : (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: Platform.OS === 'web' ? '#ffffff' : COLORS.bg }}>
+                <ActivityIndicator size="large" color={Platform.OS === 'web' ? '#111111' : COLORS.primary} />
+                <Text style={{ marginTop: 12, color: Platform.OS === 'web' ? '#222222' : COLORS.textSecondary }}>
+                  Loading app...
+                </Text>
+              </View>
+            )}
+            <Toast config={toastConfig} />
+          </AuthProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

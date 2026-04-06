@@ -37,10 +37,10 @@ const TIME_RANGES = [
   { key: 'evening', label: 'Evening', sub: '5PM – 9PM', icon: 'moon-outline' },
 ];
 
-export default function PostRequestScreen({ navigation }) {
-  const [specialty, setSpecialty] = useState('');
+export default function PostRequestScreen({ navigation, route }) {
+  const [specialty, setSpecialty] = useState(route?.params?.specialty || '');
   const [symptoms, setSymptoms] = useState('');
-  const [urgency, setUrgency] = useState('medium');
+  const [urgency, setUrgency] = useState(route?.params?.urgency || 'medium');
   const [preferredDate, setPreferredDate] = useState(DATES[0].full);
   const [timeRange, setTimeRange] = useState('morning');
   const [notes, setNotes] = useState('');

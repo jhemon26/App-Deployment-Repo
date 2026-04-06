@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Card, Input, Button, Divider } from '../../components/UIComponents';
-import { COLORS, FONTS, SPACING, RADIUS } from '../../utils/theme';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Card, Input, Button, Badge, Avatar } from '../../components/UIComponents';
+import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../utils/theme';
 import { prescriptionAPI } from '../../services/api';
 import Toast from 'react-native-toast-message';
 
 export default function PrescriptionScreen({ navigation, route }) {
   const booking = route?.params?.booking || route?.params?.patient;
-  const patientName = booking?.patient || booking?.patient_detail?.name || booking?.name || 'patient';
+  const patientName = booking?.patient || booking?.patient_detail?.name || booking?.name || 'Patient';
   const [diagnosis, setDiagnosis] = useState('');
   const [notes, setNotes] = useState('');
   const [medicines, setMedicines] = useState([{ name: '', dosage: '', duration: '', instructions: '' }]);
@@ -76,25 +77,68 @@ export default function PrescriptionScreen({ navigation, route }) {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={{ ...FONTS.h2, color: COLORS.text }}>Create Prescription</Text>
+        <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 4 }}>
+          Issue prescription for {patientName}
+        </Text>
+      </View>
+
+      {/* Patient info card */}
       {booking && (
-        <Card style={{ marginHorizontal: SPACING.xl, marginTop: SPACING.md }}>
-          <Text style={{ ...FONTS.captionBold, color: COLORS.textSecondary }}>Patient</Text>
-          <Text style={{ ...FONTS.h4, color: COLORS.text, marginTop: 4 }}>{patientName}</Text>
-          <Text style={{ ...FONTS.caption, color: COLORS.textSecondary }}>{booking.symptoms}</Text>
-        </Card>
+        <View style={[styles.patientCard, SHADOWS.sm]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={styles.patientIcon}>
+              <Ionicons name="person-outline" size={22} color={COLORS.general} />
+            </View>
+            <View style={{ flex: 1, marginLeft: SPACING.md }}>
+              <Text style={{ ...FONTS.small, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Patient</Text>
+              <Text style={{ ...FONTS.h4, color: COLORS.text, marginTop: 2 }}>{patientName}</Text>
+              {booking.symptoms ? (
+                <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 3 }} numberOfLines={2}>
+                  {booking.symptoms}
+                </Text>
+              ) : null}
+            </View>
+            <Badge text="Active" color={COLORS.success} size="sm" />
+          </View>
+        </View>
       )}
 
-      <View style={{ paddingHorizontal: SPACING.xl, marginTop: SPACING.xl }}>
-        <Input label="Diagnosis" placeholder="Enter diagnosis" value={diagnosis} onChangeText={setDiagnosis} />
+      <View style={{ paddingHorizontal: SPACING.xl, marginTop: SPACING.lg }}>
+        {/* Diagnosis */}
+        <View style={styles.sectionHeader}>
+          <Ionicons name="clipboard-outline" size={16} color={COLORS.doctor} />
+          <Text style={styles.sectionHeaderText}>Diagnosis</Text>
+        </View>
+        <Input
+          placeholder="Enter diagnosis"
+          value={diagnosis}
+          onChangeText={setDiagnosis}
+        />
 
-        <Text style={{ ...FONTS.h4, color: COLORS.text, marginBottom: SPACING.md }}>Medicines</Text>
+        {/* Medicines section */}
+        <View style={[styles.sectionHeader, { marginTop: SPACING.lg }]}>
+          <Ionicons name="medical-outline" size={16} color={COLORS.pharmacy} />
+          <Text style={styles.sectionHeaderText}>Medicines</Text>
+          <View style={styles.medCountBadge}>
+            <Text style={{ ...FONTS.captionBold, color: COLORS.pharmacy, fontSize: 11 }}>{medicines.length}</Text>
+          </View>
+        </View>
+
         {medicines.map((med, index) => (
-          <Card key={index} style={{ marginBottom: SPACING.md, backgroundColor: COLORS.bgElevated }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.sm }}>
-              <Text style={{ ...FONTS.captionBold, color: COLORS.primary }}>Medicine #{index + 1}</Text>
+          <View key={index} style={[styles.medCard, SHADOWS.sm]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
+                <View style={styles.medIndex}>
+                  <Text style={{ ...FONTS.captionBold, color: COLORS.text, fontSize: 11 }}>{index + 1}</Text>
+                </View>
+                <Text style={{ ...FONTS.captionBold, color: COLORS.pharmacy }}>Medicine #{index + 1}</Text>
+              </View>
               {medicines.length > 1 && (
-                <TouchableOpacity onPress={() => removeMedicine(index)}>
-                  <Text style={{ ...FONTS.captionBold, color: COLORS.danger }}>Remove</Text>
+                <TouchableOpacity onPress={() => removeMedicine(index)} style={styles.removeBtn}>
+                  <Ionicons name="trash-outline" size={14} color={COLORS.danger} />
                 </TouchableOpacity>
               )}
             </View>
@@ -108,17 +152,30 @@ export default function PrescriptionScreen({ navigation, route }) {
               </View>
             </View>
             <Input label="Instructions" placeholder="e.g. After meals, twice daily" value={med.instructions} onChangeText={(v) => updateMedicine(index, 'instructions', v)} />
-          </Card>
+          </View>
         ))}
 
-        <Button title="+ Add Medicine" variant="outline" onPress={addMedicine} style={{ marginBottom: SPACING.xl }} />
+        <Button
+          title="+ Add Another Medicine"
+          variant="outline"
+          color={COLORS.pharmacy}
+          onPress={addMedicine}
+          style={{ marginBottom: SPACING.xl }}
+        />
+
+        {/* Notes & Follow-up */}
+        <View style={[styles.sectionHeader, { marginBottom: SPACING.md }]}>
+          <Ionicons name="document-text-outline" size={16} color={COLORS.info} />
+          <Text style={styles.sectionHeaderText}>Notes & Follow-up</Text>
+        </View>
 
         <Input label="Additional Notes" placeholder="Any additional notes or instructions..." value={notes} onChangeText={setNotes} multiline numberOfLines={3} />
 
         <Input label="Follow-up (days)" placeholder="e.g. 7" value={followUpDays} onChangeText={setFollowUpDays} keyboardType="numeric" />
 
+        {/* Quick actions */}
         <View style={{ flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.xl }}>
-          <Button title="Use Template" variant="outline" onPress={handleTemplate} style={{ flex: 1 }} />
+          <Button title="Use Template" variant="outline" color={COLORS.doctor} onPress={handleTemplate} style={{ flex: 1 }} />
           <Button title="Save Draft" variant="outline" color={COLORS.info} onPress={handleDraft} style={{ flex: 1 }} />
         </View>
 
@@ -132,4 +189,69 @@ export default function PrescriptionScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+  header: {
+    paddingHorizontal: SPACING.xl,
+    paddingTop: 52,
+    paddingBottom: SPACING.sm,
+  },
+  patientCard: {
+    backgroundColor: COLORS.bgCard,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.general,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
+  patientIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.general + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
+  sectionHeaderText: {
+    ...FONTS.h4,
+    color: COLORS.text,
+  },
+  medCountBadge: {
+    backgroundColor: COLORS.pharmacy + '20',
+    borderRadius: RADIUS.full,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: COLORS.pharmacy + '40',
+  },
+  medCard: {
+    backgroundColor: COLORS.bgElevated,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.pharmacy,
+  },
+  medIndex: {
+    width: 22,
+    height: 22,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.pharmacy + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeBtn: {
+    padding: SPACING.sm,
+    backgroundColor: COLORS.danger + '15',
+    borderRadius: RADIUS.sm,
+  },
 });

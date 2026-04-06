@@ -5,6 +5,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Card, EmptyState, Button } from '../../components/UIComponents';
 import { COLORS, FONTS, SPACING } from '../../utils/theme';
 import { notificationAPI } from '../../services/api';
+
 const typeIcon = {
   booking: 'calendar-outline',
   order: 'cube-outline',
@@ -28,9 +29,9 @@ export default function NotificationsScreen() {
       const { data } = await notificationAPI.list();
       const rows = Array.isArray(data) ? data : data?.results || [];
       const mapped = rows.map((item) => ({
-        id: item.id,
-        title: item.title,
-        body: item.body,
+        id: item.id || String(Math.random()),
+        title: item.title || 'Notification',
+        body: item.body || '',
         time: item.created_at ? new Date(item.created_at).toLocaleString() : 'Now',
         read: !!item.is_read,
         type: item.notification_type || 'reminder',
@@ -39,6 +40,7 @@ export default function NotificationsScreen() {
     } catch (error) {
       setNotifications([]);
       setLoadError(true);
+      console.error('Error loading notifications:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -76,11 +78,14 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={{ paddingHorizontal: SPACING.xl, paddingTop: 60, paddingBottom: SPACING.md }}>
-        <Text style={{ ...FONTS.h2, color: COLORS.text }}>Notifications</Text>
-        <View style={{ marginTop: SPACING.sm }}>
-          <Button title="Mark all read" size="sm" variant="outline" color={COLORS.primary} fullWidth={false} onPress={handleMarkAllRead} />
+      <View style={{ paddingHorizontal: SPACING.xl, paddingTop: 52, paddingBottom: SPACING.sm, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <View>
+          <Text style={{ ...FONTS.h2, color: COLORS.text }}>Notifications</Text>
+          <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 4 }}>
+            {notifications.filter((n) => !n.read).length} unread
+          </Text>
         </View>
+        <Button title="Mark all read" size="sm" variant="outline" color={COLORS.primary} fullWidth={false} onPress={handleMarkAllRead} />
       </View>
 
       {loading ? (
@@ -106,7 +111,7 @@ export default function NotificationsScreen() {
         }
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => markAsRead(item)} activeOpacity={0.85}>
-          <Card style={[{ marginBottom: SPACING.sm, padding: SPACING.md }, !item.read && { borderLeftWidth: 3, borderLeftColor: COLORS.primary }]}> 
+          <Card style={[{ marginBottom: SPACING.md, padding: SPACING.md }, !item.read && { borderLeftWidth: 3, borderLeftColor: COLORS.primary }]}>
             <View style={{ flexDirection: 'row' }}>
               <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.bgElevated, alignItems: 'center', justifyContent: 'center', marginRight: SPACING.md }}>
                 <Ionicons name={typeIcon[item.type] || 'ellipse-outline'} size={18} color={COLORS.primary} />

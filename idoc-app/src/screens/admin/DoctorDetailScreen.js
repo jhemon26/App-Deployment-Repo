@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Avatar, Badge, Button, Card, Divider } from '../../components/UIComponents';
-import { COLORS, FONTS, SPACING, RADIUS } from '../../utils/theme';
+import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../utils/theme';
 import { adminAPI } from '../../services/api';
 import Toast from 'react-native-toast-message';
 
@@ -18,21 +18,20 @@ export default function AdminDoctorDetailScreen({ navigation, route }) {
   const typeLabel = approvalType.charAt(0).toUpperCase() + approvalType.slice(1);
 
   const infoRows = [
-    { label: 'Email', value: item?.email },
-    { label: 'Phone', value: item?.phone || 'Not provided' },
-    { label: 'Role', value: typeLabel },
-    { label: 'License Number', value: item?.license || item?.license_number || 'Not provided' },
+    { label: 'Email', value: item?.email, icon: 'mail-outline' },
+    { label: 'Phone', value: item?.phone || 'Not provided', icon: 'call-outline' },
+    { label: 'License Number', value: item?.license || item?.license_number || 'Not provided', icon: 'card-outline' },
     ...(approvalType === 'doctor' ? [
-      { label: 'Specialty', value: item?.specialty || 'Not specified' },
-      { label: 'Experience', value: item?.experience || 'Not specified' },
-      { label: 'Consultation Fee', value: item?.fee ? `฿${item.fee}` : 'Not specified' },
-      { label: 'Bio', value: item?.bio || 'No bio provided' },
+      { label: 'Specialty', value: item?.specialty || 'Not specified', icon: 'medical-outline' },
+      { label: 'Experience', value: item?.experience || 'Not specified', icon: 'time-outline' },
+      { label: 'Consultation Fee', value: item?.fee ? `฿${item.fee}` : 'Not specified', icon: 'cash-outline' },
+      { label: 'Bio', value: item?.bio || 'No bio provided', icon: 'document-text-outline' },
     ] : [
-      { label: 'Pharmacy Name', value: item?.pharmacy_name || item?.name },
-      { label: 'Address', value: item?.address || 'Not provided' },
-      { label: 'Delivery Time', value: item?.delivery_time || 'Not specified' },
+      { label: 'Pharmacy Name', value: item?.pharmacy_name || item?.name, icon: 'storefront-outline' },
+      { label: 'Address', value: item?.address || 'Not provided', icon: 'location-outline' },
+      { label: 'Delivery Time', value: item?.delivery_time || 'Not specified', icon: 'bicycle-outline' },
     ]),
-    { label: 'Submitted', value: item?.submitted ? new Date(item.submitted).toLocaleDateString() : 'N/A' },
+    { label: 'Submitted', value: item?.submitted ? new Date(item.submitted).toLocaleDateString() : 'N/A', icon: 'calendar-outline' },
   ];
 
   const handleApprove = () => {
@@ -92,19 +91,43 @@ export default function AdminDoctorDetailScreen({ navigation, route }) {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Profile Header */}
-      <View style={styles.profileHeader}>
-        <Avatar name={item?.name} size={80} color={typeColor} />
-        <Text style={{ ...FONTS.h2, color: COLORS.text, marginTop: SPACING.md, textAlign: 'center' }}>
+      {/* Banner Header */}
+      <View style={[styles.banner, { borderBottomColor: typeColor }]}>
+        <View style={[styles.avatarRing, { borderColor: typeColor + '50' }]}>
+          <Avatar name={item?.name} size={68} color={typeColor} />
+        </View>
+        <Text style={{ ...FONTS.h3, color: COLORS.text, marginTop: SPACING.sm, textAlign: 'center' }}>
           {item?.name}
         </Text>
-        <Badge text={typeLabel} color={typeColor} style={{ marginTop: SPACING.sm }} />
-        <Badge
-          text="Pending Review"
-          color={COLORS.warning}
-          style={{ marginTop: 6 }}
-        />
+        <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 2 }}>
+          {approvalType === 'doctor' ? item?.specialty || 'Doctor' : item?.pharmacy_name || 'Pharmacy'}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.sm }}>
+          <Badge text={typeLabel} color={typeColor} />
+          <Badge text="Pending Review" color={COLORS.warning} />
+        </View>
       </View>
+
+      {/* Quick stats row for doctors */}
+      {approvalType === 'doctor' && (
+        <View style={styles.statsRow}>
+          {[
+            { label: 'Experience', value: item?.experience || 'N/A', icon: 'time-outline' },
+            { label: 'Fee', value: item?.fee ? `฿${item.fee}` : 'N/A', icon: 'cash-outline' },
+            { label: 'Specialty', value: item?.specialty || 'N/A', icon: 'medical-outline' },
+          ].map((stat, i) => (
+            <View key={i} style={[styles.statItem, SHADOWS.sm]}>
+              <View style={[styles.statIcon, { backgroundColor: typeColor + '20' }]}>
+                <Ionicons name={stat.icon} size={16} color={typeColor} />
+              </View>
+              <Text style={{ ...FONTS.captionBold, color: COLORS.text, marginTop: SPACING.sm, textAlign: 'center' }} numberOfLines={1}>
+                {stat.value}
+              </Text>
+              <Text style={{ ...FONTS.small, color: COLORS.textMuted, marginTop: 2 }}>{stat.label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Info Card */}
       <Card style={styles.infoCard}>
@@ -113,7 +136,12 @@ export default function AdminDoctorDetailScreen({ navigation, route }) {
           <View key={i}>
             {i > 0 && <Divider />}
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{row.label}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <View style={[styles.infoIconWrap, { backgroundColor: typeColor + '15' }]}>
+                  <Ionicons name={row.icon} size={14} color={typeColor} />
+                </View>
+                <Text style={styles.infoLabel}>{row.label}</Text>
+              </View>
               <Text style={styles.infoValue} numberOfLines={row.label === 'Bio' || row.label === 'Address' ? 4 : 1}>
                 {row.value || '—'}
               </Text>
@@ -137,7 +165,9 @@ export default function AdminDoctorDetailScreen({ navigation, route }) {
                 if (url) Linking.openURL(url);
               }}
             >
-              <Ionicons name="document-outline" size={20} color={COLORS.primary} />
+              <View style={[styles.infoIconWrap, { backgroundColor: COLORS.primary + '15' }]}>
+                <Ionicons name="document-outline" size={14} color={COLORS.primary} />
+              </View>
               <Text style={styles.docName} numberOfLines={1}>
                 {typeof doc === 'string' ? `Document ${i + 1}` : doc.name || `Document ${i + 1}`}
               </Text>
@@ -147,22 +177,23 @@ export default function AdminDoctorDetailScreen({ navigation, route }) {
         </Card>
       )}
 
-      {/* No documents */}
       {(!item?.documents || item.documents.length === 0) && (
-        <Card style={styles.infoCard}>
+        <Card style={[styles.infoCard, { backgroundColor: COLORS.bgElevated }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="document-outline" size={20} color={COLORS.textMuted} style={{ marginRight: SPACING.sm }} />
-            <Text style={{ ...FONTS.body, color: COLORS.textSecondary }}>No documents uploaded</Text>
+            <View style={[styles.infoIconWrap, { backgroundColor: COLORS.border }]}>
+              <Ionicons name="document-outline" size={14} color={COLORS.textMuted} />
+            </View>
+            <Text style={{ ...FONTS.body, color: COLORS.textSecondary, marginLeft: SPACING.md }}>No documents uploaded</Text>
           </View>
         </Card>
       )}
 
-      {/* Admin Note */}
+      {/* Admin notice */}
       <Card style={[styles.infoCard, { backgroundColor: COLORS.warning + '10', borderColor: COLORS.warning + '40', borderWidth: 1 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
           <Ionicons name="information-circle-outline" size={18} color={COLORS.warning} style={{ marginRight: SPACING.sm, marginTop: 2 }} />
           <Text style={{ ...FONTS.caption, color: COLORS.warning, flex: 1 }}>
-            Approving will send an immediate notification to the applicant and activate their account. Rejection will also notify them with the reason.
+            Approving activates the account immediately and notifies the applicant. Rejection also sends a notification with the reason.
           </Text>
         </View>
       </Card>
@@ -171,6 +202,7 @@ export default function AdminDoctorDetailScreen({ navigation, route }) {
       <View style={styles.actions}>
         <Button
           title="Approve"
+          color={COLORS.success}
           onPress={handleApprove}
           loading={approving}
           style={{ flex: 1 }}
@@ -192,11 +224,40 @@ export default function AdminDoctorDetailScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  profileHeader: {
+  banner: {
     alignItems: 'center',
-    paddingTop: SPACING.xl,
+    paddingTop: SPACING.lg,
     paddingBottom: SPACING.lg,
     paddingHorizontal: SPACING.xl,
+    backgroundColor: COLORS.bgCard,
+    borderBottomWidth: 3,
+  },
+  avatarRing: {
+    padding: 3,
+    borderRadius: RADIUS.full,
+    borderWidth: 2,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+  },
+  statItem: {
+    alignItems: 'center',
+    backgroundColor: COLORS.bgCard,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    width: '30%',
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
+  statIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   infoCard: { marginHorizontal: SPACING.xl, marginBottom: SPACING.md },
   infoRow: {
@@ -205,8 +266,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingVertical: SPACING.sm,
   },
-  infoLabel: { ...FONTS.caption, color: COLORS.textSecondary, flex: 1 },
-  infoValue: { ...FONTS.captionBold, color: COLORS.text, flex: 2, textAlign: 'right' },
+  infoIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: RADIUS.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.sm,
+  },
+  infoLabel: { ...FONTS.caption, color: COLORS.textSecondary },
+  infoValue: { ...FONTS.captionBold, color: COLORS.text, flex: 1.5, textAlign: 'right' },
   docItem: {
     flexDirection: 'row',
     alignItems: 'center',

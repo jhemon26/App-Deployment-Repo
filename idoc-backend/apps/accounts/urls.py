@@ -9,5 +9,6 @@ urlpatterns = [
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('change-password/', views.ChangePasswordView.as_view(), name='change-password'),
     path('forgot-password/', views.forgot_password, name='forgot-password'),
+    path('reset-password/', views.reset_password, name='reset-password'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 ]

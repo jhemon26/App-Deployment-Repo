@@ -1,264 +1,474 @@
-import React, { useCallback, useState } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, ActivityIndicator,
-} from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { Button, Card, Chip, Input, Badge } from '../../components/UIComponents';
-import { COLORS, FONTS, SPACING, RADIUS } from '../../utils/theme';
-import { availabilityAPI } from '../../services/api';
 import Toast from 'react-native-toast-message';
+import { Card, Button } from '../../components/UIComponents';
+import { COLORS, FONTS, SPACING, RADIUS } from '../../utils/theme';
+import { useAuth } from '../../context/AuthContext';
 
-const DATES = Array.from({ length: 14 }, (_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() + i);
-  return {
-    full: date.toISOString().split('T')[0],
-    day: date.toLocaleDateString('en', { weekday: 'short' }),
-    date: date.getDate(),
-    month: date.toLocaleDateString('en', { month: 'short' }),
-  };
-});
-
-const CONSULT_TYPES = [
-  { key: 'video', label: 'Video', icon: 'videocam-outline' },
-  { key: 'chat', label: 'Chat', icon: 'chatbubble-outline' },
-  { key: 'both', label: 'Both', icon: 'swap-horizontal-outline' },
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const CONSULTATION_TYPES = [
+  { id: 'chat', label: 'Chat Only', icon: 'chatbubble-outline' },
+  { id: 'video', label: 'Video Call', icon: 'videocam-outline' },
+  { id: 'both', label: 'Both', icon: 'swap-horizontal-outline' },
 ];
 
-export default function PostAvailabilityScreen({ navigation }) {
-  const [selectedDate, setSelectedDate] = useState(DATES[0].full);
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [consultType, setConsultType] = useState('video');
-  const [maxBookings, setMaxBookings] = useState('');
-  const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [mySlots, setMySlots] = useState([]);
-  const [slotsLoading, setSlotsLoading] = useState(true);
+const defaultDay = { enabled: false, start: '09:00', end: '17:00', type: 'both' };
 
-  const loadMySlots = async () => {
-    setSlotsLoading(true);
-    try {
-      const { data } = await availabilityAPI.getMySlots();
-      const rows = Array.isArray(data) ? data : data?.results || [];
-      setMySlots(rows);
-    } catch {
-      setMySlots([]);
-    } finally {
-      setSlotsLoading(false);
+const formatTypeLabel = (type) => {
+  if (type === 'chat') return 'Chat';
+  if (type === 'video') return 'Video';
+  return 'Chat & Video';
+};
+
+const getHoursUntilNextOccurrence = (dayName, startTime) => {
+  try {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const now = new Date();
+    const todayIndex = now.getDay();
+    const targetIndex = days.indexOf(dayName);
+    if (targetIndex < 0) return Number.POSITIVE_INFINITY;
+
+    const offsetDays = (targetIndex - todayIndex + 7) % 7;
+    const [startHour, startMinute] = String(startTime || '00:00').split(':').map(Number);
+    const nextStart = new Date(now);
+    nextStart.setDate(now.getDate() + offsetDays);
+    nextStart.setHours(startHour || 0, startMinute || 0, 0, 0);
+
+    if (offsetDays === 0 && nextStart <= now) {
+      nextStart.setDate(nextStart.getDate() + 7);
     }
+
+    return (nextStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+};
+
+export default function PostAvailabilityScreen() {
+  const { user, updateProfile } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [schedule, setSchedule] = useState({
+    Monday: { ...defaultDay },
+    Tuesday: { ...defaultDay },
+    Wednesday: { ...defaultDay },
+    Thursday: { ...defaultDay },
+    Friday: { ...defaultDay },
+    Saturday: { ...defaultDay },
+    Sunday: { ...defaultDay },
+  });
+  const [editorDay, setEditorDay] = useState(null);
+  const [draft, setDraft] = useState(null);
+
+  const loadSchedule = useCallback(async () => {
+    try {
+      const doctorProfile = user?.doctor_profile || user;
+      if (doctorProfile?.availability_hours) {
+        setSchedule(doctorProfile.availability_hours);
+      }
+    } catch (error) {
+      console.error('Error loading schedule:', error);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSchedule();
+    }, [loadSchedule])
+  );
+
+  const openEditor = (day) => {
+    setEditorDay(day);
+    setDraft({ ...(schedule[day] || defaultDay) });
   };
 
-  useFocusEffect(useCallback(() => { loadMySlots(); }, []));
+  const closeEditor = () => {
+    setEditorDay(null);
+    setDraft(null);
+  };
 
-  const handlePost = async () => {
-    if (!startTime.trim() || !endTime.trim()) {
-      Toast.show({ type: 'error', text1: 'Enter start and end times', text2: 'Format: HH:MM (e.g. 09:00)' });
+  const updateDraft = (field, value) => {
+    setDraft((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const saveDraft = () => {
+    if (!draft?.start || !draft?.end) {
+      Toast.show({ type: 'error', text1: 'Please fill in both times' });
       return;
     }
-    const timeRegex = /^\d{1,2}:\d{2}$/;
-    if (!timeRegex.test(startTime.trim()) || !timeRegex.test(endTime.trim())) {
-      Toast.show({ type: 'error', text1: 'Invalid time format', text2: 'Use HH:MM format, e.g. 09:00 or 14:30' });
+
+    setSchedule((prev) => ({
+      ...prev,
+      [editorDay]: { ...draft, enabled: true },
+    }));
+    Toast.show({ type: 'success', text1: `${editorDay} availability prepared` });
+    closeEditor();
+  };
+
+  const cancelAvailability = (dayName) => {
+    const current = schedule[dayName];
+    if (!current?.enabled) return;
+
+    const hoursLeft = getHoursUntilNextOccurrence(dayName, current.start);
+    if (hoursLeft < 12) {
+      Toast.show({
+        type: 'error',
+        text1: 'Too late to cancel',
+        text2: 'Availability cannot be cancelled within 12 hours of the next shift.',
+      });
       return;
     }
+
+    setSchedule((prev) => ({
+      ...prev,
+      [dayName]: { ...prev[dayName], enabled: false },
+    }));
+    if (editorDay === dayName) closeEditor();
+    Toast.show({ type: 'success', text1: 'Availability cancelled' });
+  };
+
+  const saveAll = async () => {
     setLoading(true);
     try {
-      await availabilityAPI.post({
-        date: selectedDate,
-        start_time: startTime.trim(),
-        end_time: endTime.trim(),
-        consultation_type: consultType,
-        max_bookings: maxBookings ? parseInt(maxBookings, 10) : undefined,
-        notes: notes.trim() || undefined,
-      });
-      Toast.show({ type: 'success', text1: 'Availability Posted!', text2: 'Patients can now see and book this slot' });
-      setStartTime('');
-      setEndTime('');
-      setMaxBookings('');
-      setNotes('');
-      loadMySlots();
+      await updateProfile({ availability_hours: schedule });
+      Toast.show({ type: 'success', text1: 'Schedule saved successfully!' });
     } catch (error) {
-      Toast.show({ type: 'error', text1: 'Failed to post', text2: error.response?.data?.detail || 'Please try again' });
+      Toast.show({ type: 'error', text1: 'Failed to save schedule' });
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await availabilityAPI.delete(id);
-      setMySlots((prev) => prev.filter((s) => s.id !== id));
-      Toast.show({ type: 'info', text1: 'Slot removed' });
-    } catch {
-      Toast.show({ type: 'error', text1: 'Could not remove slot' });
-    }
-  };
+  const savedDays = useMemo(
+    () => DAYS.filter((day) => (schedule[day] || {}).enabled),
+    [schedule]
+  );
+
+  const activeCount = savedDays.length;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
-        <Text style={{ ...FONTS.h2, color: COLORS.text }}>Post Availability</Text>
-        <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 4 }}>
-          Let patients know when you're available
-        </Text>
+    <ScrollView style={styles.page} showsVerticalScrollIndicator={false} contentContainerStyle={styles.pageContent}>
+      <View style={styles.headerBlock}>
+        <Text style={styles.pageTitle}>My Availability</Text>
+        <Text style={styles.pageSubtitle}>Post weekly hours first, then manage what you have already saved</Text>
       </View>
 
-      {/* Date Selection */}
-      <Text style={styles.sectionTitle}>Select Date</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: SPACING.xl }}>
-        {DATES.map((d) => (
-          <TouchableOpacity
-            key={d.full}
-            style={[styles.dateCard, selectedDate === d.full && styles.dateCardActive]}
-            onPress={() => setSelectedDate(d.full)}
-          >
-            <Text style={[styles.dateDay, selectedDate === d.full && { color: COLORS.textInverse }]}>{d.day}</Text>
-            <Text style={[styles.dateNum, selectedDate === d.full && { color: COLORS.textInverse }]}>{d.date}</Text>
-            <Text style={[styles.dateMonth, selectedDate === d.full && { color: COLORS.textInverse }]}>{d.month}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Time */}
-      <View style={{ paddingHorizontal: SPACING.xl, marginTop: SPACING.xl }}>
-        <View style={{ flexDirection: 'row', gap: SPACING.md }}>
-          <View style={{ flex: 1 }}>
-            <Input
-              label="Start Time"
-              placeholder="09:00"
-              value={startTime}
-              onChangeText={setStartTime}
-              keyboardType="numbers-and-punctuation"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Input
-              label="End Time"
-              placeholder="17:00"
-              value={endTime}
-              onChangeText={setEndTime}
-              keyboardType="numbers-and-punctuation"
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* Consultation Type */}
-      <Text style={styles.sectionTitle}>Consultation Type</Text>
-      <View style={{ flexDirection: 'row', paddingHorizontal: SPACING.xl, gap: SPACING.sm }}>
-        {CONSULT_TYPES.map((type) => (
-          <TouchableOpacity
-            key={type.key}
-            style={[styles.typeCard, consultType === type.key && styles.typeCardActive]}
-            onPress={() => setConsultType(type.key)}
-          >
-            <Ionicons name={type.icon} size={18} color={consultType === type.key ? COLORS.primary : COLORS.textSecondary} />
-            <Text style={[styles.typeLabel, consultType === type.key && { color: COLORS.primary }]}>{type.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Max Bookings & Notes */}
-      <View style={{ paddingHorizontal: SPACING.xl, marginTop: SPACING.lg }}>
-        <Input
-          label="Max Bookings (optional)"
-          placeholder="e.g. 5"
-          value={maxBookings}
-          onChangeText={setMaxBookings}
-          keyboardType="number-pad"
-        />
-        <Input
-          label="Notes (optional)"
-          placeholder="e.g. In-person at Clinic B only"
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-          numberOfLines={2}
-        />
-      </View>
-
-      <View style={{ paddingHorizontal: SPACING.xl, marginBottom: SPACING.xl }}>
-        <Button title="Post Availability" onPress={handlePost} loading={loading} />
-      </View>
-
-      {/* My Posted Slots */}
-      <Text style={styles.sectionTitle}>My Posted Slots</Text>
-      {slotsLoading ? (
-        <View style={{ alignItems: 'center', paddingVertical: SPACING.xl }}>
-          <ActivityIndicator size="small" color={COLORS.primary} />
-        </View>
-      ) : mySlots.length === 0 ? (
-        <Card style={{ marginHorizontal: SPACING.xl, marginBottom: SPACING.xl }}>
-          <Text style={{ ...FONTS.body, color: COLORS.textSecondary, textAlign: 'center' }}>
-            No upcoming availability posted
+      <Card style={styles.noticeCard}>
+        <View style={styles.noticeRow}>
+          <Ionicons name="information-circle-outline" size={18} color={COLORS.info} />
+          <Text style={styles.noticeText}>
+            Use the top section to post or edit a day. The lower section shows everything you have saved and lets you edit or cancel it.
           </Text>
-        </Card>
-      ) : (
-        mySlots.map((slot) => (
-          <Card key={slot.id} style={{ marginHorizontal: SPACING.xl, marginBottom: SPACING.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ ...FONTS.bodyBold, color: COLORS.text }}>
-                  {slot.date || 'N/A'}
-                </Text>
-                <Text style={{ ...FONTS.caption, color: COLORS.primary, marginTop: 2 }}>
-                  {slot.start_time} – {slot.end_time}
-                </Text>
-                <View style={{ flexDirection: 'row', gap: SPACING.sm, marginTop: 6 }}>
-                  <Badge text={slot.consultation_type || 'video'} color={COLORS.info} size="sm" />
-                  {slot.max_bookings && (
-                    <Badge text={`Max ${slot.max_bookings}`} color={COLORS.textSecondary} size="sm" />
-                  )}
-                </View>
-                {slot.notes ? (
-                  <Text style={{ ...FONTS.small, color: COLORS.textMuted, marginTop: 4 }}>{slot.notes}</Text>
-                ) : null}
-              </View>
-              <TouchableOpacity
-                onPress={() => handleDelete(slot.id)}
-                style={styles.deleteBtn}
-              >
-                <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
-              </TouchableOpacity>
-            </View>
-          </Card>
-        ))
-      )}
+        </View>
+      </Card>
 
-      <View style={{ height: 40 }} />
+      <Card style={styles.sectionCard}>
+        <View style={styles.sectionHeaderRow}>
+          <View>
+            <Text style={styles.sectionTitle}>Post Availability</Text>
+            <Text style={styles.sectionMeta}>Tap a day to edit it</Text>
+          </View>
+          <View style={styles.countPill}>
+            <Ionicons name="calendar-outline" size={12} color={COLORS.primary} />
+            <Text style={styles.countPillText}>{activeCount} saved</Text>
+          </View>
+        </View>
+
+        <View style={styles.dayList}>
+          {DAYS.map((day) => {
+            const dayData = schedule[day] || defaultDay;
+            const isOpen = editorDay === day;
+
+            return (
+              <TouchableOpacity
+                key={day}
+                activeOpacity={0.75}
+                onPress={() => (isOpen ? closeEditor() : openEditor(day))}
+                style={[styles.dayRow, dayData.enabled && styles.dayRowEnabled, isOpen && styles.dayRowOpen]}
+              >
+                <View style={styles.dayLeft}>
+                  <View style={[styles.dayDot, dayData.enabled && styles.dayDotOn]} />
+                  <View>
+                    <Text style={[styles.dayLabel, dayData.enabled && styles.dayLabelOn]}>{day}</Text>
+                    <Text style={styles.daySub}>
+                      {dayData.enabled ? `${dayData.start} - ${dayData.end}` : 'Not posted yet'}
+                    </Text>
+                  </View>
+                </View>
+                <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {editorDay && draft && (
+          <View style={styles.editorPanel}>
+            <View style={styles.editorHeading}>
+              <Text style={styles.editorTitle}>{editorDay}</Text>
+              <Text style={styles.editorSubtitle}>Set hours and consultation mode</Text>
+            </View>
+
+            <View style={styles.timeBlock}>
+              <Text style={styles.blockLabel}>Availability Hours</Text>
+              <View style={styles.timeRow}>
+                <View style={styles.timeFieldGroup}>
+                  <Text style={styles.timeLabel}>From</Text>
+                  <TextInput
+                    placeholder="09:00"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={draft.start || ''}
+                    onChangeText={(text) => updateDraft('start', text)}
+                    style={styles.timeInput}
+                    maxLength={5}
+                  />
+                </View>
+                <View style={styles.timeDivider}>
+                  <Text style={styles.timeDividerText}>to</Text>
+                </View>
+                <View style={styles.timeFieldGroup}>
+                  <Text style={styles.timeLabel}>Until</Text>
+                  <TextInput
+                    placeholder="17:00"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={draft.end || ''}
+                    onChangeText={(text) => updateDraft('end', text)}
+                    style={styles.timeInput}
+                    maxLength={5}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.typeBlock}>
+              <Text style={styles.blockLabel}>Consultation Type</Text>
+              <View style={styles.typeRow}>
+                {CONSULTATION_TYPES.map((type) => {
+                  const selected = draft.type === type.id;
+                  return (
+                    <TouchableOpacity
+                      key={type.id}
+                      activeOpacity={0.8}
+                      onPress={() => updateDraft('type', type.id)}
+                      style={[styles.typeCard, selected && styles.typeCardOn]}
+                    >
+                      <Ionicons name={type.icon} size={15} color={selected ? COLORS.primary : COLORS.textSecondary} />
+                      <Text style={[styles.typeText, selected && styles.typeTextOn]}>{type.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={styles.editorActions}>
+              <Button title="Cancel" variant="outline" size="sm" onPress={closeEditor} style={styles.actionBtn} />
+              <Button title="Save" size="sm" onPress={saveDraft} style={styles.actionBtn} />
+            </View>
+          </View>
+        )}
+      </Card>
+
+      <Card style={styles.sectionCard}>
+        <View style={styles.sectionHeaderRow}>
+          <View>
+            <Text style={styles.sectionTitle}>Saved Availability</Text>
+            <Text style={styles.sectionMeta}>{activeCount} active day{activeCount === 1 ? '' : 's'}</Text>
+          </View>
+        </View>
+
+        {savedDays.length ? (
+          <View style={styles.savedList}>
+            {savedDays.map((dayName) => {
+              const item = schedule[dayName];
+              const editing = editorDay === dayName;
+              return (
+                <View key={dayName} style={styles.savedItem}>
+                  <View style={styles.savedTopRow}>
+                    <View style={styles.savedInfo}>
+                      <View style={styles.savedDot} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.savedDay}>{dayName}</Text>
+                        <Text style={styles.savedMeta}>
+                          {item.start} - {item.end} · {formatTypeLabel(item.type)}
+                        </Text>
+                      </View>
+                    </View>
+                    {editing && <Text style={styles.editingBadge}>Editing</Text>}
+                  </View>
+
+                  <View style={styles.savedActions}>
+                    <Button title="Edit" size="sm" variant="outline" color={COLORS.primary} onPress={() => openEditor(dayName)} style={styles.savedBtn} />
+                    <Button title="Cancel" size="sm" variant="outline" color={COLORS.danger} onPress={() => cancelAvailability(dayName)} style={styles.savedBtn} />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ) : (
+          <View style={styles.emptySaved}>
+            <Ionicons name="calendar-outline" size={24} color={COLORS.textMuted} />
+            <Text style={styles.emptyTitle}>No saved availability yet</Text>
+            <Text style={styles.emptyText}>Post a day above and it will appear here for editing or cancellation.</Text>
+          </View>
+        )}
+      </Card>
+
+      <Button title={loading ? 'Saving...' : 'Save All Changes'} onPress={saveAll} disabled={loading} style={styles.saveAllBtn} />
+      <Text style={styles.footerText}>Your availability is visible to patients when they search for doctors.</Text>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
-  header: { paddingHorizontal: SPACING.xl, paddingTop: 60, paddingBottom: SPACING.lg },
-  sectionTitle: { ...FONTS.h4, color: COLORS.text, paddingHorizontal: SPACING.xl, marginTop: SPACING.xl, marginBottom: SPACING.md },
-  dateCard: {
-    alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 12,
+  page: { flex: 1, backgroundColor: COLORS.bg },
+  pageContent: { paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: SPACING.xxxl },
+  headerBlock: { marginBottom: SPACING.md },
+  pageTitle: { ...FONTS.h2, color: COLORS.text },
+  pageSubtitle: { ...FONTS.caption, color: COLORS.textSecondary, marginTop: 4 },
+  noticeCard: {
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
+    backgroundColor: COLORS.info + '0E',
+    borderColor: COLORS.info + '28',
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.info,
+  },
+  noticeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  noticeText: { ...FONTS.caption, color: COLORS.textSecondary, flex: 1, lineHeight: 18 },
+  sectionCard: {
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     borderRadius: RADIUS.lg,
     backgroundColor: COLORS.bgCard,
-    marginRight: SPACING.sm,
-    borderWidth: 1, borderColor: COLORS.border,
-    minWidth: 64,
   },
-  dateCardActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  dateDay: { ...FONTS.small, color: COLORS.textSecondary },
-  dateNum: { ...FONTS.h3, color: COLORS.text, marginVertical: 2 },
-  dateMonth: { ...FONTS.small, color: COLORS.textSecondary },
-  typeCard: {
-    flex: 1, alignItems: 'center', paddingVertical: SPACING.md,
-    borderRadius: RADIUS.lg, backgroundColor: COLORS.bgCard,
-    borderWidth: 2, borderColor: COLORS.border,
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.sm },
+  sectionTitle: { ...FONTS.h4, color: COLORS.text },
+  sectionMeta: { ...FONTS.caption, color: COLORS.textSecondary, marginTop: 2 },
+  countPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.primary + '12',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  typeCardActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '10' },
-  typeLabel: { ...FONTS.captionBold, color: COLORS.textSecondary, marginTop: 4 },
-  deleteBtn: {
-    padding: SPACING.sm,
-    backgroundColor: COLORS.danger + '15',
+  countPillText: { ...FONTS.captionBold, color: COLORS.primary, fontSize: 11 },
+  dayList: { rowGap: 8 },
+  dayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 12,
     borderRadius: RADIUS.md,
-    marginLeft: SPACING.md,
+    backgroundColor: COLORS.bgElevated,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
+  dayRowEnabled: {
+    borderColor: COLORS.success + '35',
+    backgroundColor: COLORS.success + '08',
+  },
+  dayRowOpen: {
+    borderColor: COLORS.primary + '40',
+    backgroundColor: COLORS.primary + '10',
+  },
+  dayLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  dayDot: { width: 8, height: 8, borderRadius: 999, backgroundColor: COLORS.textMuted },
+  dayDotOn: { backgroundColor: COLORS.success },
+  dayLabel: { ...FONTS.bodyBold, color: COLORS.textSecondary },
+  dayLabelOn: { color: COLORS.text },
+  daySub: { ...FONTS.caption, color: COLORS.textMuted, marginTop: 1 },
+  editorPanel: {
+    marginTop: SPACING.md,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.bgElevated,
+  },
+  editorHeading: { marginBottom: SPACING.md },
+  editorTitle: { ...FONTS.bodyBold, color: COLORS.text },
+  editorSubtitle: { ...FONTS.caption, color: COLORS.textSecondary, marginTop: 2 },
+  timeBlock: { marginBottom: SPACING.md },
+  blockLabel: {
+    ...FONTS.captionBold,
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontSize: 11,
+    marginBottom: 8,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: SPACING.xs,
+    backgroundColor: COLORS.bgCard,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 8,
+  },
+  timeFieldGroup: { flex: 1 },
+  timeLabel: { ...FONTS.small, color: COLORS.textSecondary, marginBottom: 6, paddingHorizontal: 2 },
+  timeInput: {
+    height: 38,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.bg,
+    color: COLORS.text,
+    ...FONTS.body,
+    textAlign: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 0,
+  },
+  timeDivider: { width: 28, alignItems: 'center', justifyContent: 'center', paddingBottom: 4 },
+  timeDividerText: { ...FONTS.captionBold, color: COLORS.textMuted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  typeBlock: { marginBottom: SPACING.md },
+  typeRow: { flexDirection: 'row', gap: 8 },
+  typeCard: {
+    flex: 1,
+    minHeight: 54,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.bgCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    gap: 4,
+  },
+  typeCardOn: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '12' },
+  typeText: { ...FONTS.small, color: COLORS.textSecondary, textAlign: 'center', fontSize: 11 },
+  typeTextOn: { color: COLORS.primary },
+  editorActions: { flexDirection: 'row', gap: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
+  actionBtn: { flex: 1, minWidth: 92 },
+  savedList: { rowGap: 8 },
+  savedItem: {
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.bgElevated,
+  },
+  savedTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  savedInfo: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  savedDot: { width: 8, height: 8, borderRadius: 999, backgroundColor: COLORS.success },
+  savedDay: { ...FONTS.bodyBold, color: COLORS.text },
+  savedMeta: { ...FONTS.caption, color: COLORS.textSecondary, marginTop: 2 },
+  editingBadge: { ...FONTS.captionBold, color: COLORS.primary, fontSize: 11 },
+  savedActions: { flexDirection: 'row', gap: 8, marginTop: SPACING.sm },
+  savedBtn: { flex: 1 },
+  emptySaved: { alignItems: 'center', paddingVertical: SPACING.lg, rowGap: 6 },
+  emptyTitle: { ...FONTS.bodyBold, color: COLORS.text },
+  emptyText: { ...FONTS.caption, color: COLORS.textSecondary, textAlign: 'center' },
+  saveAllBtn: { marginTop: SPACING.sm },
+  footerText: { ...FONTS.caption, color: COLORS.textMuted, textAlign: 'center', marginTop: SPACING.md, lineHeight: 18 },
 });

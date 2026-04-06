@@ -1,8 +1,9 @@
 import axios from 'axios';
 import storage from '../utils/storage';
+import { CONFIG } from '../utils/config';
 
-// ─── Django server URL ───
-const BASE_URL = 'http://144.126.239.34/api/v1';
+// ─── Django server URL (from config, allows environment override) ───
+const BASE_URL = CONFIG.API.BASE_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -34,6 +35,15 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Log errors for debugging
+    if (CONFIG.DEBUG) {
+      console.error(`[API Error] ${originalRequest?.method?.toUpperCase()} ${originalRequest?.url}`, {
+        status: error.response?.status,
+        message: error.response?.data?.message || error.message,
+        data: error.response?.data,
+      });
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -50,6 +60,9 @@ api.interceptors.response.use(
         // Refresh failed, user needs to re-login
         await storage.deleteItem('access_token');
         await storage.deleteItem('refresh_token');
+        if (CONFIG.DEBUG) {
+          console.error('[API Error] Token refresh failed', refreshError);
+        }
         return Promise.reject(refreshError);
       }
     }

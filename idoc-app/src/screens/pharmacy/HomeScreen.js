@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../../context/AuthContext';
 import { Card, StatCard, Badge, SectionHeader } from '../../components/UIComponents';
 import AccountQuickMenu from '../../components/AccountQuickMenu';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../utils/theme';
 import useRoleDashboard from '../../hooks/useRoleDashboard';
+import { orderAPI, pharmacyAPI } from '../../services/api';
+
+const normalizeStatus = (value) => String(value || '').toLowerCase().trim();
+const getRows = (payload) => (Array.isArray(payload) ? payload : payload?.results || []);
 
 export default function PharmacyHomeScreen({ navigation }) {
   const { user } = useAuth();
@@ -13,21 +18,118 @@ export default function PharmacyHomeScreen({ navigation }) {
   const { width } = useWindowDimensions();
   const compact = width < 900;
 
-  const recentOrders = (dashboard?.recent_orders || dashboard?.orders || [])
+  const [liveOrders, setLiveOrders] = useState(null);
+  const [liveMedicineCount, setLiveMedicineCount] = useState(null);
+
+  const loadLiveCounts = React.useCallback(async () => {
+    try {
+      const [ordersResp, medsResp] = await Promise.all([
+        orderAPI.list(),
+        pharmacyAPI.getMedicines(),
+      ]);
+
+      const orders = getRows(ordersResp?.data);
+      const medicines = getRows(medsResp?.data);
+
+      setLiveOrders(orders);
+      setLiveMedicineCount(medicines.length);
+    } catch (e) {
+      // Keep dashboard fallback values if live endpoints fail.
+    }
+  }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadLiveCounts();
+    }, [loadLiveCounts])
+  );
+
+  const sourceOrders = useMemo(
+    () => (liveOrders !== null ? liveOrders : (dashboard?.orders || dashboard?.recent_orders || [])),
+    [liveOrders, dashboard]
+  );
+
+  const recentOrders = sourceOrders
     .slice(0, 4)
     .map((order) => ({
       id: order.order_number || order.id,
       customer: order.customer_name || order.customer?.name || 'Customer',
       items: order.items?.length || order.item_count || 0,
       total: Number(order.total_amount || order.total || 0),
-      status: order.status || 'new',
+      status: normalizeStatus(order.status || 'new'),
       time: order.created_at ? String(order.created_at).slice(0, 16) : 'Recently',
     }));
 
-  const newOrders = dashboard?.new_orders ?? 3;
-  const todayRevenue = dashboard?.today_revenue ?? 2450;
-  const totalOrders = dashboard?.total_orders ?? 156;
-  const totalMedicines = dashboard?.total_medicines ?? 1200;
+  const statusCounts = dashboard?.order_status_counts || dashboard?.status_counts || {};
+  const hasLiveOrders = liveOrders !== null;
+
+  const derivedCounts = useMemo(() => ({
+    newOrders: sourceOrders.filter((o) => normalizeStatus(o.status) === 'new').length,
+    preparingOrders: sourceOrders.filter((o) => normalizeStatus(o.status) === 'preparing').length,
+    readyOrders: sourceOrders.filter((o) => normalizeStatus(o.status) === 'ready').length,
+  }), [sourceOrders]);
+
+  const newOrders = Number(hasLiveOrders ? derivedCounts.newOrders : (statusCounts.new ?? derivedCounts.newOrders));
+  const preparingOrders = Number(hasLiveOrders ? derivedCounts.preparingOrders : (statusCounts.preparing ?? derivedCounts.preparingOrders));
+  const readyOrders = Number(hasLiveOrders ? derivedCounts.readyOrders : (statusCounts.ready ?? derivedCounts.readyOrders));
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const derivedTodayRevenue = sourceOrders
+    .filter((o) => normalizeStatus(o.status) === 'delivered' && String(o.created_at || '').slice(0, 10) === todayKey)
+    .reduce((sum, o) => sum + Number(o.total_amount || o.total || 0), 0);
+
+  const todayRevenue = Number(hasLiveOrders ? derivedTodayRevenue : (dashboard?.today_revenue ?? derivedTodayRevenue));
+
+  const totalMedicines = Number(liveMedicineCount ?? dashboard?.total_medicines ?? 0);
+
+  const openOrders = (initialTab) => navigation.navigate('Orders', { initialTab, requestRefreshAt: Date.now() });
+
+  const handleRefreshAll = async () => {
+    refresh();
+    await loadLiveCounts();
+  };
+
+  const quickActions = useMemo(() => ([
+    { key: 'orders', label: 'Orders', icon: 'cube-outline', color: COLORS.pharmacy, onPress: () => openOrders('All') },
+    { key: 'inventory', label: 'Inventory', icon: 'medical-outline', color: COLORS.info, onPress: () => navigation.navigate('Inventory') },
+    { key: 'profile', label: 'Profile', icon: 'person-outline', color: COLORS.success, onPress: () => navigation.navigate('Profile') },
+    { key: 'refresh', label: 'Refresh', icon: 'refresh-outline', color: COLORS.warning, onPress: handleRefreshAll },
+  ]), [navigation, refresh, loadLiveCounts]);
+
+  const statCards = useMemo(() => ([
+    {
+      key: 'new',
+      label: 'New Orders',
+      value: String(newOrders),
+      color: COLORS.danger,
+      icon: <Ionicons name="ellipse" size={14} color={COLORS.danger} />,
+      onPress: () => openOrders('New'),
+    },
+    {
+      key: 'preparing',
+      label: 'Preparing',
+      value: String(preparingOrders),
+      color: COLORS.warning,
+      icon: <Ionicons name="construct-outline" size={16} color={COLORS.warning} />,
+      onPress: () => openOrders('Preparing'),
+    },
+    {
+      key: 'ready',
+      label: 'Ready Pickup',
+      value: String(readyOrders),
+      color: COLORS.success,
+      icon: <Ionicons name="checkmark-done-outline" size={16} color={COLORS.success} />,
+      onPress: () => openOrders('Ready'),
+    },
+    {
+      key: 'sales',
+      label: "Today's Sales",
+      value: `฿${Number(todayRevenue).toLocaleString()}`,
+      color: COLORS.pharmacy,
+      icon: <Ionicons name="cash-outline" size={16} color={COLORS.pharmacy} />,
+      onPress: () => openOrders('Delivered'),
+    },
+  ]), [newOrders, preparingOrders, readyOrders, todayRevenue]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -51,38 +153,41 @@ export default function PharmacyHomeScreen({ navigation }) {
         </View>
       )}
       {!!error && !loading && (
-        <TouchableOpacity style={styles.stateWrap} onPress={refresh}>
+        <TouchableOpacity style={styles.stateWrap} onPress={handleRefreshAll}>
           <Text style={styles.stateText}>Could not load dashboard. Tap to retry.</Text>
         </TouchableOpacity>
       )}
 
       <View style={styles.quickActions}>
-        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Orders')}>
-          <Ionicons name="cube-outline" size={16} color={COLORS.pharmacy} />
-          <Text style={styles.quickActionText}>Orders</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Inventory')}>
-          <Ionicons name="medical-outline" size={16} color={COLORS.info} />
-          <Text style={styles.quickActionText}>Inventory</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.quickActionBtn} onPress={() => navigation.navigate('Profile')}>
-          <Ionicons name="person-outline" size={16} color={COLORS.success} />
-          <Text style={styles.quickActionText}>Profile</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.quickActionBtn} onPress={refresh}>
-          <Ionicons name="refresh-outline" size={16} color={COLORS.warning} />
-          <Text style={styles.quickActionText}>Refresh</Text>
-        </TouchableOpacity>
+        {quickActions.map((action) => (
+          <TouchableOpacity key={action.key} style={styles.quickActionBtn} onPress={action.onPress}>
+            <Ionicons name={action.icon} size={16} color={action.color} />
+            <Text style={styles.quickActionText}>{action.label}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <View style={[styles.statsGrid, compact && styles.statsGridCompact]}>
-        <StatCard style={styles.statCard} label="New Orders" value={String(newOrders)} color={COLORS.danger} icon={<Ionicons name="ellipse" size={14} color={COLORS.danger} />} />
-        <StatCard style={styles.statCard} label="Today's Sales" value={`฿${Number(todayRevenue).toLocaleString()}`} color={COLORS.success} icon={<Ionicons name="cash-outline" size={16} color={COLORS.success} />} />
-        <StatCard style={styles.statCard} label="Total Orders" value={String(totalOrders)} color={COLORS.info} icon={<Ionicons name="cube-outline" size={16} color={COLORS.info} />} />
-        <StatCard style={styles.statCard} label="Medicines" value={String(totalMedicines)} color={COLORS.pharmacy} icon={<Ionicons name="medical-outline" size={16} color={COLORS.pharmacy} />} />
+        {statCards.map((card) => (
+          <TouchableOpacity key={card.key} activeOpacity={0.8} style={styles.statCardTap} onPress={card.onPress}>
+            <StatCard style={styles.statCard} label={card.label} value={card.value} color={card.color} icon={card.icon} />
+          </TouchableOpacity>
+        ))}
       </View>
 
-      <SectionHeader title="Recent Orders" actionText="View All" onAction={() => navigation.navigate('Orders')} style={{ marginTop: SPACING.xl }} />
+      <View style={{ paddingHorizontal: SPACING.xl, marginTop: 2 }}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Inventory')}
+          style={styles.medicineStrip}
+        >
+          <Ionicons name="medical-outline" size={16} color={COLORS.info} />
+          <Text style={styles.medicineStripText}>Total medicines in stock: {totalMedicines}</Text>
+          <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+        </TouchableOpacity>
+      </View>
+
+      <SectionHeader title="Recent Orders" actionText="View All" onAction={() => openOrders('All')} style={{ marginTop: SPACING.xl }} />
       <View style={{ paddingHorizontal: SPACING.xl }}>
         {!recentOrders.length ? (
           <Card>
@@ -90,7 +195,7 @@ export default function PharmacyHomeScreen({ navigation }) {
             <Text style={{ ...FONTS.caption, color: COLORS.textSecondary, marginTop: 4 }}>Incoming orders will appear here.</Text>
           </Card>
         ) : recentOrders.map((order) => (
-          <Card key={order.id} style={{ marginBottom: SPACING.md }}>
+          <Card key={order.id} style={{ marginBottom: SPACING.md }} onPress={() => openOrders('All')}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <View>
                 <Text style={{ ...FONTS.captionBold, color: COLORS.textMuted }}>{order.id}</Text>
@@ -145,10 +250,26 @@ const styles = StyleSheet.create({
   statsGridCompact: {
     gap: SPACING.md,
   },
-  statCard: {
+  statCardTap: {
     width: '48%',
     marginBottom: SPACING.md,
   },
+  statCard: {
+    width: '100%',
+    marginBottom: 0,
+  },
+  medicineStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.bgElevated,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+  },
+  medicineStripText: { ...FONTS.captionBold, color: COLORS.text, flex: 1, marginLeft: 8 },
   stateWrap: {
     marginHorizontal: SPACING.xl,
     marginBottom: SPACING.md,

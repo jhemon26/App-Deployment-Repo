@@ -4,6 +4,7 @@ import { adminAPI, doctorAPI, pharmacyAPI, bookingAPI, orderAPI } from '../servi
 const getList = (payload) => {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.results)) return payload.results;
+  if (payload && typeof payload === 'object') return []; // Return empty array for invalid objects
   return [];
 };
 

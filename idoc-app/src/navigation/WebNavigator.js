@@ -1,17 +1,33 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, TouchableOpacity } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useAuth } from '../context/AuthContext';
-import { COLORS, FONTS, ROLE_CONFIG } from '../utils/theme';
+import React from "react";
+import { NavigationContainer, DarkTheme } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  Dimensions,
+  Platform,
+} from "react-native";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { useAuth } from "../context/AuthContext";
+import { COLORS, FONTS, ROLE_CONFIG } from "../utils/theme";
 
 const Stack = createNativeStackNavigator();
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const IS_WEB = Platform.OS === "web";
+const IS_SMALL_WEB = IS_WEB && SCREEN_WIDTH <= 430;
+
+const NAV_BG = "#06142B";
+const NAV_CARD = "#13233F";
+const NAV_BORDER = "#29415F";
+const NAV_TEXT = "#F4F7FB";
+const NAV_TEXT_MUTED = "#AEBBD0";
 
 class ScreenErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, message: '' };
+    this.state = { hasError: false, message: "" };
   }
 
   static getDerivedStateFromError(error) {
@@ -19,17 +35,40 @@ class ScreenErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error) {
-    console.error('Web screen render error:', error);
+    console.error("Web screen render error:", error);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: COLORS.bg }}>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 8 }}>
-            {this.props.label || 'Screen'} crashed
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+            backgroundColor: NAV_BG,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: "700",
+              color: NAV_TEXT,
+              marginBottom: 8,
+            }}
+          >
+            {this.props.label || "Screen"} crashed
           </Text>
-          <Text style={{ fontSize: 13, color: COLORS.textSecondary, textAlign: 'center' }}>{this.state.message}</Text>
+          <Text
+            style={{
+              fontSize: 13,
+              color: NAV_TEXT_MUTED,
+              textAlign: "center",
+            }}
+          >
+            {this.state.message}
+          </Text>
         </View>
       );
     }
@@ -37,22 +76,49 @@ class ScreenErrorBoundary extends React.Component {
   }
 }
 
-const withScreenBoundary = (label, ScreenComponent) => function SafeScreen(props) {
-  return (
-    <ScreenErrorBoundary label={label}>
-      <ScreenComponent {...props} />
-    </ScreenErrorBoundary>
-  );
-};
+const withScreenBoundary = (label, ScreenComponent) =>
+  function SafeScreen(props) {
+    return (
+      <ScreenErrorBoundary label={label}>
+        <ScreenComponent {...props} />
+      </ScreenErrorBoundary>
+    );
+  };
 
-const makeLoadErrorScreen = (label, error) => function ScreenLoadError() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: COLORS.bg }}>
-      <Text style={{ fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 8 }}>{label} unavailable on web</Text>
-      <Text style={{ fontSize: 13, color: COLORS.textSecondary, textAlign: 'center' }}>{String(error?.message || error)}</Text>
-    </View>
-  );
-};
+const makeLoadErrorScreen = (label, error) =>
+  function ScreenLoadError() {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          backgroundColor: NAV_BG,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "700",
+            color: NAV_TEXT,
+            marginBottom: 8,
+          }}
+        >
+          {label} unavailable on web
+        </Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: NAV_TEXT_MUTED,
+            textAlign: "center",
+          }}
+        >
+          {String(error?.message || error)}
+        </Text>
+      </View>
+    );
+  };
 
 const loadScreen = (label, loader) => {
   try {
@@ -65,61 +131,135 @@ const loadScreen = (label, loader) => {
 };
 
 // Auth
-const LoginScreen = loadScreen('Login', () => require('../screens/auth/LoginScreen'));
-const RegisterScreen = loadScreen('Register', () => require('../screens/auth/RegisterScreen'));
-const ForgotPasswordScreen = loadScreen('Forgot Password', () => require('../screens/auth/ForgotPasswordScreen'));
-const ResetPasswordScreen = loadScreen('Reset Password', () => require('../screens/auth/ResetPasswordScreen'));
+const LoginScreen = loadScreen("Login", () =>
+  require("../screens/auth/LoginScreen"),
+);
+const RegisterScreen = loadScreen("Register", () =>
+  require("../screens/auth/RegisterScreen"),
+);
+const ForgotPasswordScreen = loadScreen("Forgot Password", () =>
+  require("../screens/auth/ForgotPasswordScreen"),
+);
+const ResetPasswordScreen = loadScreen("Reset Password", () =>
+  require("../screens/auth/ResetPasswordScreen"),
+);
 
 // General
-const GeneralHomeScreen = loadScreen('General Home', () => require('../screens/general/HomeScreen'));
-const DoctorListScreen = loadScreen('Doctor List', () => require('../screens/general/DoctorListScreen'));
-const PharmacyListScreen = loadScreen('Pharmacy List', () => require('../screens/general/PharmacyListScreen'));
-const MyBookingsScreen = loadScreen('My Bookings', () => require('../screens/general/MyBookingsScreen'));
-const PrescriptionsScreen = loadScreen('Prescriptions', () => require('../screens/general/PrescriptionsScreen'));
-const PostRequestScreen = loadScreen('Post Request', () => require('../screens/general/PostRequestScreen'));
-const AvailabilityBoardScreen = loadScreen('Availability Board', () => require('../screens/general/AvailabilityBoardScreen'));
+const GeneralHomeScreen = loadScreen("General Home", () =>
+  require("../screens/general/HomeScreen"),
+);
+const DoctorListScreen = loadScreen("Doctor List", () =>
+  require("../screens/general/DoctorListScreen"),
+);
+const PharmacyListScreen = loadScreen("Pharmacy List", () =>
+  require("../screens/general/PharmacyListScreen"),
+);
+const MyBookingsScreen = loadScreen("My Bookings", () =>
+  require("../screens/general/MyBookingsScreen"),
+);
+const PrescriptionsScreen = loadScreen("Prescriptions", () =>
+  require("../screens/general/PrescriptionsScreen"),
+);
+const PostRequestScreen = loadScreen("Post Request", () =>
+  require("../screens/general/PostRequestScreen"),
+);
 
 // Doctor
-const DoctorHomeScreen = loadScreen('Doctor Home', () => require('../screens/doctor/HomeScreen'));
-const DoctorAppointmentsScreen = loadScreen('Doctor Appointments', () => require('../screens/doctor/AppointmentsScreen'));
-const DoctorPatientsScreen = loadScreen('Doctor Patients', () => require('../screens/doctor/PatientsScreen'));
-const PostAvailabilityScreen = loadScreen('Post Availability', () => require('../screens/doctor/PostAvailabilityScreen'));
+const DoctorHomeScreen = loadScreen("Doctor Home", () =>
+  require("../screens/doctor/HomeScreen"),
+);
+const DoctorAppointmentsScreen = loadScreen("Doctor Appointments", () =>
+  require("../screens/doctor/AppointmentsScreen"),
+);
+const DoctorPatientsScreen = loadScreen("Doctor Patients", () =>
+  require("../screens/doctor/PatientsScreen"),
+);
+const PostAvailabilityScreen = loadScreen("Post Availability", () =>
+  require("../screens/doctor/PostAvailabilityScreen"),
+);
+const DoctorRatingInsightsScreen = loadScreen("Doctor Rating Insights", () =>
+  require("../screens/doctor/RatingInsightsScreen"),
+);
 
 // Pharmacy
-const PharmacyHomeScreen = loadScreen('Pharmacy Home', () => require('../screens/pharmacy/HomeScreen'));
-const PharmacyOrdersScreen = loadScreen('Pharmacy Orders', () => require('../screens/pharmacy/OrdersScreen'));
-const PharmacyInventoryScreen = loadScreen('Pharmacy Inventory', () => require('../screens/pharmacy/InventoryScreen'));
+const PharmacyHomeScreen = loadScreen("Pharmacy Home", () =>
+  require("../screens/pharmacy/HomeScreen"),
+);
+const PharmacyOrdersScreen = loadScreen("Pharmacy Orders", () =>
+  require("../screens/pharmacy/OrdersScreen"),
+);
+const PharmacyInventoryScreen = loadScreen("Pharmacy Inventory", () =>
+  require("../screens/pharmacy/InventoryScreen"),
+);
 
 // Admin
-const AdminHomeScreen = loadScreen('Admin Home', () => require('../screens/admin/HomeScreen'));
-const AdminUsersScreen = loadScreen('Admin Users', () => require('../screens/admin/UsersScreen'));
-const AdminApprovalsScreen = loadScreen('Admin Approvals', () => require('../screens/admin/ApprovalsScreen'));
-const AdminDoctorDetailScreen = loadScreen('Doctor Application', () => require('../screens/admin/DoctorDetailScreen'));
+const AdminHomeScreen = loadScreen("Admin Home", () =>
+  require("../screens/admin/HomeScreen"),
+);
+const AdminUsersScreen = loadScreen("Admin Users", () =>
+  require("../screens/admin/UsersScreen"),
+);
+const AdminApprovalsScreen = loadScreen("Admin Approvals", () =>
+  require("../screens/admin/ApprovalsScreen"),
+);
+const AdminDoctorDetailScreen = loadScreen("Doctor Application", () =>
+  require("../screens/admin/DoctorDetailScreen"),
+);
 
 // Shared
-const ChatListScreen = loadScreen('Chat List', () => require('../screens/shared/ChatListScreen'));
-const ChatScreen = loadScreen('Chat', () => require('../screens/shared/ChatScreen'));
-const ProfileScreen = loadScreen('Profile', () => require('../screens/shared/ProfileScreen'));
-const NotificationsScreen = loadScreen('Notifications', () => require('../screens/shared/NotificationsScreen'));
-const VideoCallScreen = loadScreen('Video Call', () => require('../screens/shared/VideoCallScreen'));
-const ChangePasswordScreen = loadScreen('Change Password', () => require('../screens/shared/ChangePasswordScreen'));
+const ChatListScreen = loadScreen("Chat List", () =>
+  require("../screens/shared/ChatListScreen"),
+);
+const ChatScreen = loadScreen("Chat", () =>
+  require("../screens/shared/ChatScreen"),
+);
+const ProfileScreen = loadScreen("Profile", () =>
+  require("../screens/shared/ProfileScreen"),
+);
+const NotificationsScreen = loadScreen("Notifications", () =>
+  require("../screens/shared/NotificationsScreen"),
+);
+const VideoCallScreen = loadScreen("Video Call", () =>
+  require("../screens/shared/VideoCallScreen"),
+);
+const ChangePasswordScreen = loadScreen("Change Password", () =>
+  require("../screens/shared/ChangePasswordScreen"),
+);
 
 // Shared stack screens
-const DoctorDetailScreen = loadScreen('Doctor Detail', () => require('../screens/general/DoctorDetailScreen'));
-const BookingScreen = loadScreen('Booking', () => require('../screens/general/BookingScreen'));
-const BookingDetailScreen = loadScreen('Booking Detail', () => require('../screens/general/BookingDetailScreen'));
-const MedicineListScreen = loadScreen('Medicine List', () => require('../screens/general/MedicineListScreen'));
-const CartScreen = loadScreen('Cart', () => require('../screens/general/CartScreen'));
-const MyOrdersScreen = loadScreen('My Orders', () => require('../screens/general/MyOrdersScreen'));
-const OrderDetailScreen = loadScreen('Order Detail', () => require('../screens/general/OrderDetailScreen'));
-const PrescriptionScreen = loadScreen('Prescription', () => require('../screens/doctor/PrescriptionScreen'));
+const DoctorDetailScreen = loadScreen("Doctor Detail", () =>
+  require("../screens/general/DoctorDetailScreen"),
+);
+const BookingScreen = loadScreen("Booking", () =>
+  require("../screens/general/BookingScreen"),
+);
+const BookingDetailScreen = loadScreen("Booking Detail", () =>
+  require("../screens/general/BookingDetailScreen"),
+);
+const MedicineListScreen = loadScreen("Medicine List", () =>
+  require("../screens/general/MedicineListScreen"),
+);
+const CartScreen = loadScreen("Cart", () =>
+  require("../screens/general/CartScreen"),
+);
+const MyOrdersScreen = loadScreen("My Orders", () =>
+  require("../screens/general/MyOrdersScreen"),
+);
+const OrderDetailScreen = loadScreen("Order Detail", () =>
+  require("../screens/general/OrderDetailScreen"),
+);
+const PrescriptionScreen = loadScreen("Prescription", () =>
+  require("../screens/doctor/PrescriptionScreen"),
+);
 
 const screenOptions = {
-  headerStyle: { backgroundColor: COLORS.bgCard },
-  headerTintColor: COLORS.text,
-  headerTitleStyle: { ...FONTS.h4, fontWeight: '700' },
+  headerStyle: { backgroundColor: NAV_BG },
+  headerTintColor: NAV_TEXT,
+  headerTitleStyle: { fontSize: 17, fontWeight: "700", color: NAV_TEXT },
   headerBackTitleVisible: false,
-  contentStyle: { backgroundColor: COLORS.bg },
+  headerShadowVisible: false,
+  contentStyle: { backgroundColor: NAV_BG },
+  headerTitleAlign: "left",
 };
 
 const AuthStack = () => (
@@ -127,104 +267,225 @@ const AuthStack = () => (
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="Register" component={RegisterScreen} />
     <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-    <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} options={{ title: 'Reset Password', headerShown: true }} />
+    <Stack.Screen
+      name="ResetPassword"
+      component={ResetPasswordScreen}
+      options={{ title: "Reset Password", headerShown: true }}
+    />
   </Stack.Navigator>
 );
 
 const getRoleHomeScreen = (role) => {
   switch (role) {
-    case 'admin':
+    case "admin":
       return AdminHomeScreen;
-    case 'doctor':
+    case "doctor":
       return DoctorHomeScreen;
-    case 'pharmacy':
+    case "pharmacy":
       return PharmacyHomeScreen;
     default:
       return GeneralHomeScreen;
   }
 };
 
-function WebHomeScreen({ navigation }) {
-  const { user, logout } = useAuth();
-  const roleAccent = ROLE_CONFIG[user?.role]?.color || COLORS.primary;
-
-  return (
-    <View style={{ flex: 1, backgroundColor: COLORS.bg, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <Ionicons name="medkit-outline" size={30} color={COLORS.primary} style={{ marginBottom: 10 }} />
-      <Text style={{ ...FONTS.h2, color: COLORS.text }}>I Doc Web</Text>
-      <Text style={{ ...FONTS.caption, marginTop: 8, color: COLORS.textSecondary, textAlign: 'center' }}>
-        Logged in as {user?.email || 'unknown'} ({user?.role || 'user'})
-      </Text>
-      <TouchableOpacity
-        onPress={() => navigation.navigate('RoleHome')}
-        style={{ marginTop: 16, backgroundColor: roleAccent, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16 }}
-      >
-        <Text style={{ ...FONTS.bodyBold, color: COLORS.textInverse }}>Open Dashboard</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={logout}
-        style={{ marginTop: 20, backgroundColor: COLORS.bgCard, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, borderWidth: 1, borderColor: COLORS.border }}
-      >
-        <Text style={{ ...FONTS.bodyBold, color: COLORS.text }}>Logout</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
 export const WebNavigator = () => {
-  const { user } = useAuth();
+  const { user, initializing } = useAuth();
   const RoleHomeScreen = user ? getRoleHomeScreen(user.role) : null;
   const roleAccent = ROLE_CONFIG[user?.role]?.color || COLORS.primary;
 
+  if (initializing) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: NAV_BG,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Ionicons
+          name="medkit-outline"
+          size={36}
+          color={roleAccent}
+          style={{ marginBottom: 14 }}
+        />
+        <ActivityIndicator size="large" color={roleAccent} />
+        <Text style={{ ...FONTS.body, color: NAV_TEXT_MUTED, marginTop: 16 }}>
+          Loading I Doc...
+        </Text>
+      </View>
+    );
+  }
+
+  const navigationTheme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      primary: roleAccent,
+      background: NAV_BG,
+      card: NAV_CARD,
+      text: NAV_TEXT,
+      border: NAV_BORDER,
+      notification: COLORS.danger,
+    },
+  };
+
   return (
-    <NavigationContainer
-      theme={{
-        dark: true,
-        colors: {
-          primary: roleAccent,
-          background: COLORS.bg,
-          card: COLORS.bgCard,
-          text: COLORS.text,
-          border: COLORS.border,
-          notification: COLORS.danger,
-        },
-      }}
-    >
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator screenOptions={screenOptions}>
         {!user ? (
-          <Stack.Screen name="Auth" component={AuthStack} options={{ headerShown: false }} />
+          <Stack.Screen
+            name="Auth"
+            component={AuthStack}
+            options={{ headerShown: false }}
+          />
         ) : (
           <>
-            <Stack.Screen name="RoleHome" component={RoleHomeScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="WebHome" component={WebHomeScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="DoctorDetail" component={DoctorDetailScreen} options={{ title: 'Doctor Profile' }} />
-            <Stack.Screen name="Doctors" component={DoctorListScreen} options={{ title: 'Doctors' }} />
-            <Stack.Screen name="Pharmacy" component={PharmacyListScreen} options={{ title: 'Pharmacies' }} />
-            <Stack.Screen name="Bookings" component={MyBookingsScreen} options={{ title: 'My Bookings' }} />
-            <Stack.Screen name="Approvals" component={AdminApprovalsScreen} options={{ title: 'Pending Approvals' }} />
-            <Stack.Screen name="Users" component={AdminUsersScreen} options={{ title: 'User Management' }} />
-            <Stack.Screen name="Appointments" component={DoctorAppointmentsScreen} options={{ title: 'Appointments' }} />
-            <Stack.Screen name="Patients" component={DoctorPatientsScreen} options={{ title: 'Patients' }} />
-            <Stack.Screen name="Orders" component={PharmacyOrdersScreen} options={{ title: 'Orders' }} />
-            <Stack.Screen name="Inventory" component={PharmacyInventoryScreen} options={{ title: 'Inventory' }} />
-            <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Book Appointment' }} />
-            <Stack.Screen name="BookingDetail" component={BookingDetailScreen} options={{ title: 'Booking Details' }} />
-            <Stack.Screen name="MedicineList" component={MedicineListScreen} options={{ title: 'Medicines' }} />
-            <Stack.Screen name="Cart" component={CartScreen} options={{ title: 'My Cart' }} />
-            <Stack.Screen name="ChatRoom" component={ChatScreen} options={{ title: 'Chat' }} />
-            <Stack.Screen name="VideoCall" component={VideoCallScreen} options={{ title: 'Video Call' }} />
-            <Stack.Screen name="Prescription" component={PrescriptionScreen} options={{ title: 'Write Prescription' }} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
-            <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
-            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Account Security' }} />
-            <Stack.Screen name="MyOrders" component={MyOrdersScreen} options={{ title: 'My Orders' }} />
-            <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ title: 'Order Details' }} />
-            {/* New Screens */}
-            <Stack.Screen name="MyPrescriptions" component={PrescriptionsScreen} options={{ title: 'My Prescriptions' }} />
-            <Stack.Screen name="PostRequest" component={PostRequestScreen} options={{ title: 'Post a Request' }} />
-            <Stack.Screen name="AvailabilityBoard" component={AvailabilityBoardScreen} options={{ title: 'Doctor Availability' }} />
-            <Stack.Screen name="PostAvailability" component={PostAvailabilityScreen} options={{ title: 'Post Availability' }} />
-            <Stack.Screen name="AdminDoctorDetail" component={AdminDoctorDetailScreen} options={{ title: 'Review Application' }} />
+            <Stack.Screen
+              name="RoleHome"
+              component={RoleHomeScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="DoctorDetail"
+              component={DoctorDetailScreen}
+              options={{ title: "Doctor Profile" }}
+            />
+            <Stack.Screen
+              name="Doctors"
+              component={DoctorListScreen}
+              options={{ title: "Doctors" }}
+            />
+            <Stack.Screen
+              name="Pharmacy"
+              component={PharmacyListScreen}
+              options={{ title: "Pharmacies" }}
+            />
+            <Stack.Screen
+              name="Bookings"
+              component={MyBookingsScreen}
+              options={{ title: "My Bookings" }}
+            />
+            <Stack.Screen
+              name="Approvals"
+              component={AdminApprovalsScreen}
+              options={{ title: "Pending Approvals" }}
+            />
+            <Stack.Screen
+              name="Users"
+              component={AdminUsersScreen}
+              options={{ title: "User Management" }}
+            />
+            <Stack.Screen
+              name="Appointments"
+              component={DoctorAppointmentsScreen}
+              options={{ title: "Appointments" }}
+            />
+            <Stack.Screen
+              name="Patients"
+              component={DoctorPatientsScreen}
+              options={{ title: "Patients" }}
+            />
+            <Stack.Screen
+              name="Orders"
+              component={PharmacyOrdersScreen}
+              options={{ title: "Orders" }}
+            />
+            <Stack.Screen
+              name="Inventory"
+              component={PharmacyInventoryScreen}
+              options={{ title: "Inventory" }}
+            />
+            <Stack.Screen
+              name="Booking"
+              component={BookingScreen}
+              options={{ title: "Book Appointment" }}
+            />
+            <Stack.Screen
+              name="BookingDetail"
+              component={BookingDetailScreen}
+              options={{ title: "Booking Details" }}
+            />
+            <Stack.Screen
+              name="MedicineList"
+              component={MedicineListScreen}
+              options={{ title: "Medicines" }}
+            />
+            <Stack.Screen
+              name="Cart"
+              component={CartScreen}
+              options={{ title: "My Cart" }}
+            />
+            <Stack.Screen
+              name="ChatList"
+              component={ChatListScreen}
+              options={{ title: "Messages" }}
+            />
+            <Stack.Screen
+              name="ChatRoom"
+              component={ChatScreen}
+              options={{ title: "Chat" }}
+            />
+            <Stack.Screen
+              name="VideoCall"
+              component={VideoCallScreen}
+              options={{ title: "Video Call" }}
+            />
+            <Stack.Screen
+              name="Prescription"
+              component={PrescriptionScreen}
+              options={{ title: "Write Prescription" }}
+            />
+            <Stack.Screen
+              name="Notifications"
+              component={NotificationsScreen}
+              options={{ title: "Notifications" }}
+            />
+            <Stack.Screen
+              name="Profile"
+              component={ProfileScreen}
+              options={{ title: "Profile" }}
+            />
+            <Stack.Screen
+              name="ChangePassword"
+              component={ChangePasswordScreen}
+              options={{ title: "Account Security" }}
+            />
+            <Stack.Screen
+              name="MyOrders"
+              component={MyOrdersScreen}
+              options={{ title: "My Orders" }}
+            />
+            <Stack.Screen
+              name="OrderDetail"
+              component={OrderDetailScreen}
+              options={{ title: "Order Details" }}
+            />
+            <Stack.Screen
+              name="MyPrescriptions"
+              component={PrescriptionsScreen}
+              options={{ title: "My Prescriptions" }}
+            />
+            <Stack.Screen
+              name="PostRequest"
+              component={PostRequestScreen}
+              options={{ title: "Post a Request" }}
+            />
+            <Stack.Screen
+              name="DoctorRatingInsights"
+              component={DoctorRatingInsightsScreen}
+              options={{ title: "Rating Insights" }}
+            />
+            <Stack.Screen
+              name="PostAvailability"
+              component={PostAvailabilityScreen}
+              options={{ title: "Post Availability" }}
+            />
+            <Stack.Screen
+              name="AdminDoctorDetail"
+              component={AdminDoctorDetailScreen}
+              options={{ title: "Review Application" }}
+            />
           </>
         )}
       </Stack.Navigator>
