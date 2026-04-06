@@ -4,7 +4,7 @@ services:
       context: ../../idoc-app
       dockerfile: Dockerfile.web
       args:
-        EXPO_PUBLIC_API_BASE_URL: ${EXPO_PUBLIC_API_BASE_URL:-http://144.126.239.34/api/v1}
+        EXPO_PUBLIC_API_BASE_URL: ${EXPO_PUBLIC_API_BASE_URL:-https://idoc-backend-prod-production.up.railway.app/api/v1}
     container_name: idoc-web
     restart: unless-stopped
     ports:

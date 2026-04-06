@@ -10,7 +10,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '144.126.239.34'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '144.126.239.34', 'idocbd.org', 'www.idocbd.org', 'api.idocbd.org'])
 
 # Allow Railway/Render deployment domains automatically
 RAILWAY_STATIC_URL = os.environ.get('RAILWAY_STATIC_URL', '')
@@ -138,6 +138,9 @@ else:
         'http://localhost:8086',
         'http://localhost:19000',
         'http://localhost:19006',
+        'https://idocbd.org',
+        'https://www.idocbd.org',
+        'https://api.idocbd.org',
     ])
 CORS_ALLOW_CREDENTIALS = True
 # Accept any localhost port in dev mode

@@ -4,7 +4,7 @@ set -euo pipefail
 DROPLET_HOST="${DROPLET_HOST:-root@144.126.239.34}"
 REPO_URL="${REPO_URL:-https://github.com/jhemon26/App-Deployment-Repo.git}"
 REMOTE_DIR="${REMOTE_DIR:-/opt/App-Deployment-Repo}"
-API_BASE_URL="${EXPO_PUBLIC_API_BASE_URL:-http://144.126.239.34/api/v1}"
+API_BASE_URL="${EXPO_PUBLIC_API_BASE_URL:-https://idoc-backend-prod-production.up.railway.app/api/v1}"
 
 echo "Deploying frontend to ${DROPLET_HOST}"
 
