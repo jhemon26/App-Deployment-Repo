@@ -4,7 +4,7 @@
  */
 
 const API_BASE_URL_DEV = 'http://localhost:8000/api/v1';
-const API_BASE_URL_PROD = 'http://144.126.239.34/api/v1';
+const API_BASE_URL_PROD = 'https://idoc-backend-prod-production.up.railway.app/api/v1';
 
 const getEnvApiBaseUrl = () => {
   try {
