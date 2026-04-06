@@ -64,9 +64,13 @@ class Command(BaseCommand):
         for role, total in role_counts.items():
             for idx in range(1, total + 1):
                 email = f'{role}{idx}@seed.idoc.local'
-                name_prefix = 'Dr.' if role == 'doctor' else role.capitalize()
-                name = f'{name_prefix} Seed {idx}'
-                password = self._pwd()
+                if role == 'general':
+                    name = f'Patient {idx}'
+                    password = 'pass12345'
+                else:
+                    name_prefix = 'Dr.' if role == 'doctor' else role.capitalize()
+                    name = f'{name_prefix} Seed {idx}'
+                    password = self._pwd()
 
                 user, created = User.objects.get_or_create(
                     email=email,
@@ -85,7 +89,6 @@ class Command(BaseCommand):
                     user.set_password(password)
                     user.save()
                 else:
-                    # Keep existing users but rotate deterministic test password for current run visibility.
                     user.name = name
                     user.phone = user.phone or f'+8801{random.randint(100000000, 999999999)}'
                     if role in ['doctor', 'pharmacy', 'admin', 'general']:
