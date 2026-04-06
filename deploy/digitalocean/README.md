@@ -1,60 +1,67 @@
-# DigitalOcean Frontend Deployment (I Doc Web)
+# DigitalOcean + Railway Deployment (Autonomous Scripts)
 
-This deploys the Expo web build as a static site behind Nginx using Docker.
-Backend API is already deployed on Railway.
+Repository: https://github.com/jhemon26/App-Deployment-Repo.git
+Droplet: 144.126.239.34
+Railway Project: 177cb30c-7614-4a17-93f9-6fe1db9ede07
 
-## 1) SSH into your droplet
+## One-command full deployment
 
-```bash
-ssh root@YOUR_DROPLET_IP
-```
-
-## 2) Install Docker + Compose plugin (if needed)
+From your local machine (with SSH access to droplet + Railway CLI logged in):
 
 ```bash
-apt update && apt install -y docker.io docker-compose-plugin git
-systemctl enable --now docker
+cd /Users/jahidhasanemon/Learning_SWE/IDOC\ APPLICATION\ copy
+EXPO_PUBLIC_API_BASE_URL=http://144.126.239.34/api/v1 ./deploy/deploy_all.sh
 ```
 
-## 3) Pull your repository
+This runs:
+1. Railway backend deploy + migrate
+2. DigitalOcean frontend deploy with Docker
+
+## Backend only (Railway)
 
 ```bash
-cd /opt
-rm -rf Complete-IDOC-App
-git clone https://github.com/jhemon26/Complete-IDOC-App.git
-cd Complete-IDOC-App
+cd /Users/jahidhasanemon/Learning_SWE/IDOC\ APPLICATION\ copy
+./deploy/railway/deploy_backend.sh
 ```
 
-## 4) Build and run web app
+Optional demo seeding on Railway:
 
 ```bash
-docker compose -f deploy/digitalocean/docker-compose.frontend.yml up -d --build
+SEED_DATA=true ./deploy/railway/deploy_backend.sh
 ```
 
-## 5) Verify service
+## Frontend only (DigitalOcean)
 
 ```bash
-docker ps
-curl -I http://localhost
+cd /Users/jahidhasanemon/Learning_SWE/IDOC\ APPLICATION\ copy
+EXPO_PUBLIC_API_BASE_URL=http://144.126.239.34/api/v1 ./deploy/digitalocean/deploy_frontend.sh
 ```
 
-## 6) (Optional) Open firewall
+## Required local prerequisites
+
+1. SSH access to root@144.126.239.34 (key configured)
+2. Railway CLI installed and authenticated:
+```bash
+npm i -g @railway/cli
+railway login
+```
+
+## Verification
+
+After deployment:
 
 ```bash
-ufw allow 80/tcp
-ufw allow 443/tcp
+curl -I http://144.126.239.34:8080
 ```
 
-## 7) (Optional) Add domain + HTTPS with Caddy or Nginx Proxy Manager
-
-You can place Cloudflare in front, or add a reverse proxy for TLS cert automation.
-
----
-
-## Update deployment after code changes
+Backend health check (replace with Railway public URL if different):
 
 ```bash
-cd /opt/Complete-IDOC-App
-git pull
-docker compose -f deploy/digitalocean/docker-compose.frontend.yml up -d --build
+curl -I http://144.126.239.34/healthz/
 ```
+
+## Notes
+
+- Frontend Docker build injects `EXPO_PUBLIC_API_BASE_URL` at build time.
+- Backend migrations include new `requests` and `availability` apps.
+- Demo credentials are generated only when seeding is explicitly enabled.
