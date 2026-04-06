@@ -30,6 +30,11 @@ EXPO_PUBLIC_API_BASE_URL=${API_BASE_URL}
 ENV
 
 cd "${REMOTE_DIR}"
+dockerd_status=$(systemctl is-active nginx 2>/dev/null || true)
+if [ "$dockerd_status" = "active" ]; then
+  systemctl stop nginx || true
+  systemctl disable nginx || true
+fi
 docker compose -f deploy/digitalocean/docker-compose.frontend.yml up -d --build
 
 echo "Frontend deployed on port 8080"
