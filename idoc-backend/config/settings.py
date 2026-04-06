@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'apps.chat',
     'apps.notifications',
     'apps.administration',
+    'apps.requests',
+    'apps.availability',
 ]
 
 MIDDLEWARE = [

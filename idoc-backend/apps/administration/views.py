@@ -103,8 +103,8 @@ class UserListView(generics.ListAPIView):
         role = self.request.query_params.get('role')
         if role:
             qs = qs.filter(role=role)
-        blocked = self.request.query_params.get('blocked')
-        if blocked == 'true':
+        blocked = self.request.query_params.get('blocked') or self.request.query_params.get('is_blocked')
+        if str(blocked).lower() in ['true', '1', 'yes']:
             qs = qs.filter(is_blocked=True)
         return qs
 
