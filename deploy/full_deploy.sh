@@ -7,6 +7,8 @@ BACKEND_DIR="$ROOT_DIR/idoc-backend"
 
 API_CHECK_URL="${API_CHECK_URL:-https://idoc-backend-prod-production.up.railway.app/api/v1/doctors/}"
 WEB_CHECK_URL="${WEB_CHECK_URL:-https://idocbd.org}"
+REPO_AUTH_TOKEN="${REPO_AUTH_TOKEN:-}"
+GIT_AUTH_USER="${GIT_AUTH_USER:-x-access-token}"
 
 run_step() {
   echo ""
@@ -19,7 +21,7 @@ railway up
 
 run_step "Frontend deploy to DigitalOcean"
 cd "$ROOT_DIR"
-bash deploy/digitalocean/deploy_frontend.sh
+REPO_AUTH_TOKEN="$REPO_AUTH_TOKEN" GIT_AUTH_USER="$GIT_AUTH_USER" bash deploy/digitalocean/deploy_frontend.sh
 
 run_step "Smoke checks"
 curl -fsS "$API_CHECK_URL" >/dev/null

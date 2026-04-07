@@ -78,13 +78,18 @@ Deployment:
 - Approved providers get their dashboards and operational features.
 - Blocked users should not gain protected access.
 
-## 7. Important Implementation Notes
+## 7. Private Repo Deployment Notes
+- A private GitHub repo is supported by passing a read-only token to the droplet deploy script.
+- The token should be stored outside the repo as an environment variable when deploying.
+- Do not commit tokens, passwords, or SSH keys into the repository.
+
+## 8. Important Implementation Notes
 - Provider discovery depends on matching frontend IDs with backend profile and user IDs correctly.
 - Booking flow depends on accurate slot/doctor mapping and approved provider availability.
 - Registration and login flows must keep approval state consistent with backend validation.
 - API base URL and deployment target must stay aligned with the currently valid runtime domain.
 
-## 8. What To Check First When Fixing Issues
+## 9. What To Check First When Fixing Issues
 - Frontend API client and runtime config
 - Backend route definitions
 - Role/approval logic in accounts
@@ -92,7 +97,7 @@ Deployment:
 - Seed data command and demo account state
 - Deployment scripts only after application logic is confirmed
 
-## 9. Security/Clarity Rules For This Guide
+## 10. Security/Clarity Rules For This Guide
 - Do not store passwords, tokens, secrets, or private host details here.
 - Keep this file descriptive, not operationally sensitive.
 - Keep deployment commands in scripts, not in the context guide.
