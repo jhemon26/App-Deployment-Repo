@@ -7,16 +7,32 @@ REMOTE_DIR="${REMOTE_DIR:-/opt/App-Deployment-Repo}"
 API_BASE_URL="${EXPO_PUBLIC_API_BASE_URL:-https://idoc-backend-prod-production.up.railway.app/api/v1}"
 REPO_AUTH_TOKEN="${REPO_AUTH_TOKEN:-}"
 GIT_AUTH_USER="${GIT_AUTH_USER:-x-access-token}"
+REMOTE_TOKEN_FILE="${REMOTE_TOKEN_FILE:-/root/.config/idoc/github_repo_token}"
 
 echo "Deploying frontend to ${DROPLET_HOST}"
 
 ssh -o StrictHostKeyChecking=accept-new "${DROPLET_HOST}" \
-  "REMOTE_DIR='${REMOTE_DIR}' REPO_URL='${REPO_URL}' API_BASE_URL='${API_BASE_URL}' REPO_AUTH_TOKEN='${REPO_AUTH_TOKEN}' GIT_AUTH_USER='${GIT_AUTH_USER}' bash -s" <<'EOF_REMOTE'
+  "REMOTE_DIR='${REMOTE_DIR}' REPO_URL='${REPO_URL}' API_BASE_URL='${API_BASE_URL}' REPO_AUTH_TOKEN='${REPO_AUTH_TOKEN}' GIT_AUTH_USER='${GIT_AUTH_USER}' REMOTE_TOKEN_FILE='${REMOTE_TOKEN_FILE}' bash -s" <<'EOF_REMOTE'
 set -euo pipefail
 
+get_repo_token() {
+  if [ -n "${REPO_AUTH_TOKEN}" ]; then
+    printf '%s' "${REPO_AUTH_TOKEN}"
+    return 0
+  fi
+
+  if [ -f "${REMOTE_TOKEN_FILE}" ]; then
+    cat "${REMOTE_TOKEN_FILE}"
+    return 0
+  fi
+
+  return 1
+}
+
 setup_git_askpass() {
-  if [ -z "${REPO_AUTH_TOKEN}" ]; then
-    return
+  repo_token="$(get_repo_token 2>/dev/null || true)"
+  if [ -z "${repo_token}" ]; then
+    return 1
   fi
 
   cat >/tmp/git-askpass.sh <<'ASKPASS'
@@ -27,14 +43,17 @@ case "$1" in
   *) printf "%s\n" "__REPO_AUTH_TOKEN__" ;;
 esac
 ASKPASS
-  sed -i "s#__GIT_AUTH_USER__#${GIT_AUTH_USER}#g; s#__REPO_AUTH_TOKEN__#${REPO_AUTH_TOKEN}#g" /tmp/git-askpass.sh
+  sed -i "s#__GIT_AUTH_USER__#${GIT_AUTH_USER}#g; s#__REPO_AUTH_TOKEN__#${repo_token}#g" /tmp/git-askpass.sh
   chmod 700 /tmp/git-askpass.sh
   export GIT_ASKPASS=/tmp/git-askpass.sh
   export GIT_TERMINAL_PROMPT=0
 }
 
 clone_or_update_repo() {
-  setup_git_askpass
+  if setup_git_askpass; then
+    :
+  fi
+
   if [ ! -d "${REMOTE_DIR}/.git" ]; then
     rm -rf "${REMOTE_DIR}"
     git clone "${REPO_URL}" "${REMOTE_DIR}"

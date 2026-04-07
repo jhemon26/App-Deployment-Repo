@@ -79,9 +79,9 @@ Deployment:
 - Blocked users should not gain protected access.
 
 ## 7. Private Repo Deployment Notes
-- A private GitHub repo is supported by passing a read-only token to the droplet deploy script.
-- The token should be stored outside the repo as an environment variable when deploying.
-- Do not commit tokens, passwords, or SSH keys into the repository.
+- A private GitHub repo can be deployed automatically by storing a read-only repo token once on the droplet at `/root/.config/idoc/github_repo_token`.
+- After that one-time setup, future deploys can run unattended and do not require passing the token manually.
+- Do not store passwords, tokens, SSH keys, or other secrets in this file.
 
 ## 8. Important Implementation Notes
 - Provider discovery depends on matching frontend IDs with backend profile and user IDs correctly.
