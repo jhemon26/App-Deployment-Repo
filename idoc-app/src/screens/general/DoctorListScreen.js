@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Card, Avatar, SearchBar, Button } from '../../components/UIComponents';
 import { COLORS, FONTS, SPACING, RADIUS } from '../../utils/theme';
-import { doctorAPI, bookingAPI } from '../../services/api';
+import { doctorAPI, bookingAPI, availabilityAPI } from '../../services/api';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -68,8 +68,9 @@ export default function DoctorListScreen({ navigation, route }) {
       const { data } = await doctorAPI.list(params);
       const rows = Array.isArray(data) ? data : data?.results || [];
 
-      // Load today's bookings
+      // Load today's bookings and active availability slots
       let allBookings = [];
+      let availabilityRows = [];
       try {
         const { data: bookingData } = await bookingAPI.list({});
         allBookings = Array.isArray(bookingData) ? bookingData : bookingData?.results || [];
@@ -77,7 +78,20 @@ export default function DoctorListScreen({ navigation, route }) {
         allBookings = [];
       }
 
-      const todayName = getDayName();
+      try {
+        const { data: availabilityData } = await availabilityAPI.list({ date: new Date().toISOString().slice(0, 10) });
+        availabilityRows = Array.isArray(availabilityData) ? availabilityData : availabilityData?.results || [];
+      } catch {
+        availabilityRows = [];
+      }
+
+      const availabilityMap = availabilityRows.reduce((acc, slot) => {
+        const doctorProfileId = slot.doctor_id || slot.doctor_profile_id || slot.doctor?.id;
+        if (!doctorProfileId) return acc;
+        if (!acc[doctorProfileId]) acc[doctorProfileId] = [];
+        acc[doctorProfileId].push(slot);
+        return acc;
+      }, {});
 
       const mapped = rows.map((entry) => {
         const profile = entry.user ? entry : entry.doctor_profile || entry;
@@ -96,37 +110,28 @@ export default function DoctorListScreen({ navigation, route }) {
         // Check if doctor is currently in a consultation
         const currentlyInConsultation = isCurrentlyInConsultation(doctorBookings);
 
-        // Check weekly schedule for today
-        const availabilityHours = profile.availability_hours || {};
-        const todaySchedule = availabilityHours[todayName];
-        const hasWeeklyScheduleToday = todaySchedule && todaySchedule.enabled;
-
-        // Check if within today's weekly availability hours
-        const withinWeeklyHours = hasWeeklyScheduleToday &&
-          todaySchedule.start &&
-          todaySchedule.end &&
-          isTimeWithinRange(todaySchedule.start, todaySchedule.end);
-
-        // Check if doctor posted quick online now
+        const todayAvailability = availabilityMap[profile.id] || [];
+        const firstSlot = todayAvailability[0];
+        const hasAvailabilityToday = todayAvailability.length > 0;
         const isQuickOnlineActive = profile.is_quick_online_now === true;
+        const isProfileAvailable = profile.is_available !== false;
 
-        // Online: not in consultation AND (quick online OR within weekly hours)
-        const isOnlineNow = !currentlyInConsultation && (isQuickOnlineActive || withinWeeklyHours);
+        // Online means the doctor is active and has a live slot for today
+        const isOnlineNow = isProfileAvailable && !currentlyInConsultation && (isQuickOnlineActive || hasAvailabilityToday);
 
-        // Can book if online now OR has weekly schedule for today
-        const canBook = isOnlineNow || hasWeeklyScheduleToday;
+        // Can book if the doctor is active and has at least one slot today
+        const canBook = isProfileAvailable && (isQuickOnlineActive || hasAvailabilityToday);
 
-        // Get consultation type for today
-        const consultationType = todaySchedule?.type || 'both';
+        const consultationType = firstSlot?.consultation_type || 'both';
 
         // Availability display info
         let availabilityInfo = null;
         if (isQuickOnlineActive) {
           availabilityInfo = { source: 'quick', text: 'Online now' };
-        } else if (hasWeeklyScheduleToday) {
+        } else if (firstSlot) {
           availabilityInfo = {
             source: 'weekly',
-            text: `${todaySchedule.start}-${todaySchedule.end}`,
+            text: `${String(firstSlot.start_time).slice(0, 5)}-${String(firstSlot.end_time).slice(0, 5)}`,
           };
         }
 
@@ -138,13 +143,13 @@ export default function DoctorListScreen({ navigation, route }) {
           specialty: profile.specialty || 'General Medicine',
           rating: Number(profile.rating || 0),
           fee: Number(profile.fee || 0),
-          available: profile.is_available !== false,
+          available: isProfileAvailable && hasAvailabilityToday,
           isOnlineNow,
           currentlyInConsultation,
           isQuickOnlineActive,
-          hasWeeklyScheduleToday,
-          weeklyHours: hasWeeklyScheduleToday ? `${todaySchedule.start}-${todaySchedule.end}` : null,
-          withinWeeklyHours,
+          hasAvailabilityToday,
+          weeklyHours: firstSlot ? `${String(firstSlot.start_time).slice(0, 5)}-${String(firstSlot.end_time).slice(0, 5)}` : null,
+          withinWeeklyHours: hasAvailabilityToday,
           consultationType,
           availabilityInfo,
           canBook,
@@ -235,7 +240,7 @@ export default function DoctorListScreen({ navigation, route }) {
                 {item.isQuickOnlineActive ? 'Online now' : 'Online now'}
               </Text>
             </View>
-          ) : item.hasWeeklyScheduleToday ? (
+          ) : item.hasAvailabilityToday ? (
             <View style={styles.offlineBadge}>
               <Ionicons name="radio-button-off-outline" size={8} color={COLORS.textMuted} />
               <Text style={styles.offlineBadgeText}>{item.weeklyHours}</Text>

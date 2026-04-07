@@ -14,7 +14,7 @@ python manage.py collectstatic --noinput
 
 if [ "${RUN_SEED_DATA:-false}" = "true" ]; then
 	echo "=== Seeding demo data ==="
-	python manage.py seed_data
+	python manage.py seed_demo_data --reset
 else
 	echo "=== Skipping demo seed data (RUN_SEED_DATA=false) ==="
 fi

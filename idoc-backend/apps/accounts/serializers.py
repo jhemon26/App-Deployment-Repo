@@ -101,6 +101,9 @@ class RegisterSerializer(serializers.Serializer):
             role=role,
         )
 
+        # Doctor and pharmacy accounts remain pending until admin approval.
+        # General users stay auto-approved via the model save() hook.
+
         # Create role-specific profile
         if role == User.Role.DOCTOR and doctor_fields:
             DoctorProfile.objects.create(user=user, **doctor_fields)

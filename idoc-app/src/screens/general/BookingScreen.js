@@ -19,6 +19,8 @@ const DATES = Array.from({ length: 7 }, (_, i) => {
 
 export default function BookingScreen({ navigation, route }) {
   const { doctor, selectedSlot } = route.params;
+  const doctorProfileId = doctor.doctorProfileId || doctor.id;
+  const doctorUserId = doctor.userId || doctor.user?.id || doctor.user?.user?.id || doctor.doctor?.id || doctor.doctor_id || doctor.id;
   const [selectedDate, setSelectedDate] = useState(DATES[0].full);
   const [selectedTime, setSelectedTime] = useState(selectedSlot || null);
   const [consultationType, setConsultationType] = useState('video');
@@ -32,7 +34,7 @@ export default function BookingScreen({ navigation, route }) {
       setSlotsLoading(true);
       setSelectedTime(selectedSlot || null);
       try {
-        const { data } = await doctorAPI.getSlots(doctor.id, selectedDate);
+        const { data } = await doctorAPI.getSlots(doctorProfileId, selectedDate);
         const rows = Array.isArray(data) ? data : data?.results || data?.slots || [];
         if (rows.length) {
           setTimeSlots(rows.map((s) => ({
@@ -49,7 +51,7 @@ export default function BookingScreen({ navigation, route }) {
       }
     };
     loadSlots();
-  }, [selectedDate, doctor.id]);
+  }, [selectedDate, doctorProfileId, selectedSlot]);
 
   const handleBooking = async () => {
     if (!selectedTime) {
@@ -59,7 +61,7 @@ export default function BookingScreen({ navigation, route }) {
     setLoading(true);
     try {
       await bookingAPI.create({
-        doctor: doctor.id,
+        doctor: doctorUserId,
         date: selectedDate,
         time_slot: selectedTime,
         consultation_type: consultationType,

@@ -37,5 +37,5 @@ if [ "$dockerd_status" = "active" ]; then
 fi
 docker compose -f deploy/digitalocean/docker-compose.frontend.yml up -d --build
 
-echo "Frontend deployed on port 8080"
+echo "Frontend deployed on ports 80 and 443 (HTTP/HTTPS via Caddy)"
 EOF

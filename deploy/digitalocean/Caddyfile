@@ -1,0 +1,4 @@
+idocbd.org, www.idocbd.org {
+  encode gzip
+  reverse_proxy idoc-web:80
+}

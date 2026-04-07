@@ -51,7 +51,41 @@ class Command(BaseCommand):
         credentials = []
 
         specialties = ['General Medicine', 'Cardiology', 'Pediatrics', 'Dermatology', 'Neurology']
-        pharmacy_names = ['CityCare', 'MedWay', 'PharmaPlus', 'HealthHub', 'QuickMeds']
+        general_names = [
+            'Bob Rahman',
+            'Alice Akter',
+            'Charlie Hasan',
+            'Diana Sultana',
+            'Ethan Karim',
+        ]
+        doctor_names = [
+            'Dr. Sarah Ahmed',
+            'Dr. Farhan Islam',
+            'Dr. Nusrat Jahan',
+            'Dr. Imran Hossain',
+            'Dr. Tasnia Rahman',
+        ]
+        pharmacy_user_names = [
+            'Aminul Haque',
+            'Mahi Chowdhury',
+            'Rafiq Ullah',
+            'Nabila Khan',
+            'Samiul Kabir',
+        ]
+        admin_names = [
+            'Admin Arif Hasan',
+            'Admin Sadia Noor',
+            'Admin Tanvir Alam',
+            'Admin Priya Das',
+            'Admin Mehedi Hasan',
+        ]
+        role_names = {
+            'general': general_names,
+            'doctor': doctor_names,
+            'pharmacy': pharmacy_user_names,
+            'admin': admin_names,
+        }
+        pharmacy_names = ['GreenLife', 'CityCare', 'MediBridge', 'HealthHub', 'QuickMeds']
         medicine_names = [
             ('Paracetamol 500mg', 'Pain Relief'),
             ('Amoxicillin 250mg', 'Antibiotic'),
@@ -64,12 +98,10 @@ class Command(BaseCommand):
         for role, total in role_counts.items():
             for idx in range(1, total + 1):
                 email = f'{role}{idx}@seed.idoc.local'
+                name = role_names[role][idx - 1]
                 if role == 'general':
-                    name = f'Patient {idx}'
                     password = 'pass12345'
                 else:
-                    name_prefix = 'Dr.' if role == 'doctor' else role.capitalize()
-                    name = f'{name_prefix} Seed {idx}'
                     password = self._pwd()
 
                 user, created = User.objects.get_or_create(

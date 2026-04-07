@@ -1,12 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Avatar, Badge, Button, Card } from '../../components/UIComponents';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../utils/theme';
+import { doctorAPI } from '../../services/api';
 
 export default function DoctorDetailScreen({ navigation, route }) {
   const { doctor } = route.params;
-  const slots = doctor.slots || [];
+  const [slots, setSlots] = useState(Array.isArray(doctor.slots) ? doctor.slots : []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSlots = async () => {
+      if (Array.isArray(doctor.slots) && doctor.slots.length) return;
+      try {
+        const { data } = await doctorAPI.getSlots(doctor.doctorProfileId || doctor.id, new Date().toISOString().split('T')[0]);
+        const rows = Array.isArray(data) ? data : data?.results || data?.slots || [];
+        const mapped = rows
+          .filter((slot) => slot?.available !== false)
+          .map((slot) => slot.time || slot.slot || slot.start_time)
+          .filter(Boolean);
+        if (!cancelled) setSlots(mapped);
+      } catch {
+        if (!cancelled) setSlots([]);
+      }
+    };
+
+    loadSlots();
+    return () => {
+      cancelled = true;
+    };
+  }, [doctor.id, doctor.doctorProfileId, doctor.slots]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

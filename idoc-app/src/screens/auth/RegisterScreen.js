@@ -188,7 +188,7 @@ export default function RegisterScreen({ navigation }) {
               <Button title="Submit" onPress={handleRegister} loading={loading} style={{ flex: 1, marginLeft: 8 }} />
             </View>
             <Text style={styles.noteText}>
-              Your pharmacy registration will be reviewed by an admin.
+              Your registration will be reviewed by an admin before activation.
             </Text>
           </View>
         )}
