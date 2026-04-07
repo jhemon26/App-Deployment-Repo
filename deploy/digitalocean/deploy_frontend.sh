@@ -8,7 +8,8 @@ API_BASE_URL="${EXPO_PUBLIC_API_BASE_URL:-https://idoc-backend-prod-production.u
 
 echo "Deploying frontend to ${DROPLET_HOST}"
 
-ssh -o StrictHostKeyChecking=accept-new "${DROPLET_HOST}" "bash -s" <<EOF
+ssh -o StrictHostKeyChecking=accept-new "${DROPLET_HOST}" \
+  "REMOTE_DIR='${REMOTE_DIR}' REPO_URL='${REPO_URL}' API_BASE_URL='${API_BASE_URL}' bash -s" <<'EOF_REMOTE'
 set -euo pipefail
 
 if ! command -v docker >/dev/null 2>&1; then
@@ -30,12 +31,13 @@ EXPO_PUBLIC_API_BASE_URL=${API_BASE_URL}
 ENV
 
 cd "${REMOTE_DIR}"
-dockerd_status=$(systemctl is-active nginx 2>/dev/null || true)
-if [ "$dockerd_status" = "active" ]; then
+nginx_status=$(systemctl is-active nginx 2>/dev/null || true)
+if [ "$nginx_status" = "active" ]; then
   systemctl stop nginx || true
   systemctl disable nginx || true
 fi
+
 docker compose -f deploy/digitalocean/docker-compose.frontend.yml up -d --build
 
 echo "Frontend deployed on ports 80 and 443 (HTTP/HTTPS via Caddy)"
-EOF
+EOF_REMOTE
